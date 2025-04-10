@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Thông báo - Quản lý Trung tâm Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-bell me-2"></i> 
+        Thông báo
+    </h1>
+    <div>
+        {% if g.is_admin %}
+        <a href="{{ url_for('notifications.create') }}" class="btn btn-primary me-2">
+            <i class="fas fa-paper-plane me-2"></i> 
+            Gửi thông báo
+        </a>
+        {% endif %}
+        <form action="{{ url_for('notifications.mark_all_read') }}" method="POST" class="d-inline">
+            <button type="submit" class="btn btn-secondary">
+                <i class="fas fa-check-double me-2"></i> 
+                Đánh dấu tất cả là đã đọc
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-bell me-2"></i> Trung tâm thông báo
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            {% if notifications %}
+                {% for notification in notifications %}
+                <div class="list-group-item notification-item {% if not notification.is_read %}unread{% endif %}">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ notification.title }}</h5>
+                        <small class="notification-time">{{ notification.created_at.strftime('%b %d, %Y %H:%M') }}</small>
+                    </div>
+                    <p class="mb-1">{{ notification.message }}</p>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-muted">
+                            <span class="badge bg-{{ 'info' if notification.notification_type == 'info' else ('warning' if notification.notification_type == 'warning' else ('success' if notification.notification_type == 'success' else 'danger')) }}">
+                                {{ notification.notification_type }}
+                            </span>
+                        </small>
+                        <div>
+                            {% if not notification.is_read %}
+                            <form action="{{ url_for('notifications.mark_read', id=notification.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-check"></i> 
+                                    Đánh dấu là đã đọc
+                                </button>
+                            </form>
+                            {% endif %}
+                            <form action="{{ url_for('notifications.delete', id=notification.id) }}" method="POST" class="d-inline ms-2">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this notification?')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="list-group-item text-center py-5">
+                    <i class="fas fa-inbox fa-3x mb-3 text-muted"></i>
+                    <p class="mb-0">
+                        Bạn không có thông báo nào</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Refresh notification count when this page is loaded
+    refreshNotificationCount();
+    
+    // Add AJAX functionality to the mark as read buttons
+    const markReadForms = document.querySelectorAll('form[action^="/notifications/mark-read/"]');
+    markReadForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Find the parent notification item and remove the unread class
+                    const notificationItem = form.closest('.notification-item');
+                    notificationItem.classList.remove('unread');
+                    
+                    // Hide the mark as read button
+                    form.style.display = 'none';
+                    
+                    // Refresh notification counter
+                    refreshNotificationCount();
+                }
+            })
+            .catch(error => {
+                console.error('Error marking notification as read:', error);
+            });
+        });
+    });
+    
+    // Add AJAX functionality to the mark all as read button
+    const markAllReadForm = document.querySelector('form[action="/notifications/mark-all-read"]');
+    if (markAllReadForm) {
+        markAllReadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            fetch(markAllReadForm.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove unread class from all notification items
+                    document.querySelectorAll('.notification-item.unread').forEach(item => {
+                        item.classList.remove('unread');
+                    });
+                    
+                    // Hide all mark as read buttons
+                    document.querySelectorAll('form[action^="/notifications/mark-read/"]').forEach(form => {
+                        form.style.display = 'none';
+                    });
+                    
+                    // Refresh notification counter
+                    refreshNotificationCount();
+                }
+            })
+            .catch(error => {
+                console.error('Error marking all notifications as read:', error);
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

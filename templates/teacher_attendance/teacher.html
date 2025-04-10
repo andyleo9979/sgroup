@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}Chi tiết chấm công giáo viên {{ teacher.full_name }} - Quản lý trung tâm Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-user-clock me-2"></i> Chi tiết chấm công: {{ teacher.full_name }}
+    </h1>
+    <div>
+        <a href="{{ url_for('teacher_attendance.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Quay lại danh sách
+        </a>
+        <a href="{{ url_for('teacher_attendance.report') }}" class="btn btn-info ms-2">
+            <i class="fas fa-chart-bar me-2"></i> Báo cáo tổng hợp
+        </a>
+    </div>
+</div>
+
+<!-- Filter Form -->
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-filter me-2"></i> Lọc dữ liệu
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('teacher_attendance.teacher_detail', teacher_id=teacher.id) }}" class="row g-3">
+            <div class="col-md-6">
+                <label for="month" class="form-label">Tháng</label>
+                <select class="form-select" id="month" name="month">
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {% if m == month %}selected{% endif %}>Tháng {{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="year" class="form-label">Năm</label>
+                <select class="form-select" id="year" name="year">
+                    {% for y in range(2020, 2031) %}
+                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-search me-2"></i> Tìm kiếm
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Tổng ngày làm việc</h6>
+                        <h2 class="mb-0">{{ summary.total_days }}</h2>
+                    </div>
+                    <i class="fas fa-calendar fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Có mặt</h6>
+                        <h2 class="mb-0">{{ summary.present }}</h2>
+                    </div>
+                    <i class="fas fa-calendar-check fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Vắng mặt</h6>
+                        <h2 class="mb-0">{{ summary.absent }}</h2>
+                    </div>
+                    <i class="fas fa-calendar-times fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Tổng giờ làm việc</h6>
+                        <h2 class="mb-0">{{ summary.total_hours }}</h2>
+                    </div>
+                    <i class="fas fa-clock fa-3x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart -->
+<div class="card mb-4">
+    <div class="card-header bg-success text-white">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-chart-line me-2"></i> Biểu đồ giờ làm việc
+        </h5>
+    </div>
+    <div class="card-body">
+        <div style="height: 300px;">
+            <canvas id="workingHoursChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Table -->
+<div class="card mb-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-list me-2"></i> Chi tiết chấm công (Tháng {{ month }}/{{ year }})
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Trạng thái</th>
+                        <th>Giờ vào</th>
+                        <th>Giờ ra</th>
+                        <th>Số giờ làm</th>
+                        <th>Ghi chú</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if attendances %}
+                        {% for attendance in attendances %}
+                        <tr>
+                            <td>{{ attendance.date.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% if attendance.status == 'present' %}
+                                <span class="badge bg-success">Có mặt</span>
+                                {% elif attendance.status == 'absent' %}
+                                <span class="badge bg-danger">Vắng mặt</span>
+                                {% elif attendance.status == 'late' %}
+                                <span class="badge bg-warning text-dark">Đi muộn</span>
+                                {% elif attendance.status == 'leave' %}
+                                <span class="badge bg-info">Nghỉ phép</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ attendance.formatted_time_in }}</td>
+                            <td>{{ attendance.formatted_time_out }}</td>
+                            <td>{{ attendance.working_hours }} giờ</td>
+                            <td>{{ attendance.note or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">Không có dữ liệu chấm công trong khoảng thời gian này</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Working hours chart
+        createLineChart(
+            'workingHoursChart',
+            {{ chart_data.dates|tojson }},
+            {{ chart_data.hours|tojson }},
+            'Số giờ làm việc',
+            'Biểu đồ giờ làm việc hàng ngày'
+        );
+    });
+</script>
+{% endblock %}

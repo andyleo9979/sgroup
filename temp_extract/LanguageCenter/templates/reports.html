@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Báo cáo - Trung tâm đào tạo Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-chart-bar me-2"></i> Báo cáo
+    </h1>
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i> Quay lại Trang tổng quan
+    </a>
+</div>
+
+<!-- Courses Performance Report -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-book me-2"></i> Báo cáo kết quả khóa học
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Tên khóa học</th>
+                        <th>Giáo viên</th>
+                        <th>Số lượng đăng ký</th>
+                        <th>Tỷ lệ lấp đầy</th>
+                        <th>Doanh thu hiện tại</th>
+                        <th>Doanh thu tiềm năng</th>
+                        <th>Hiệu suất</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in course_stats %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('courses.view', id=stat.course.id) }}">{{ stat.course.name }}</a>
+                        </td>
+                        <td>{{ stat.course.teacher.full_name if stat.course.teacher else 'Chưa gán giáo viên' }}</td>
+                        <td>{{ stat.enrollments }}/{{ stat.course.max_students }}</td>
+                        <td>
+                            <div class="progress" style="height: 10px;">
+                                <div class="progress-bar bg-{{ 'success' if stat.fill_rate >= 70 else ('warning' if stat.fill_rate >= 40 else 'danger') }}" 
+                                     role="progressbar" 
+                                     style="width: {{ stat.fill_rate }}%;" 
+                                     aria-valuenow="{{ stat.fill_rate }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            <span class="small">{{ "%.1f"|format(stat.fill_rate) }}%</span>
+                        </td>
+                        <td>{{ stat.current_revenue|format_currency }}</td>
+                        <td>{{ stat.potential_revenue|format_currency }}</td>
+                        <td>
+                            {% set revenue_percentage = (stat.current_revenue / stat.potential_revenue * 100) if stat.potential_revenue > 0 else 0 %}
+                            <span class="badge bg-{{ 'success' if revenue_percentage >= 70 else ('warning' if revenue_percentage >= 40 else 'danger') }}">
+                                {{ "%.1f"|format(revenue_percentage) }}%
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Teacher Performance Report -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-chalkboard-teacher me-2"></i> Báo cáo Hiệu suất của Giáo viên
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+
+                        <th>Giáo viên</th>
+                        <th>Các khóa học</th>
+                        <th>Tổng số lượng đăng ký</th>
+                        <th>Tổng doanh thu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in teacher_stats %}
+                    <tr>
+                        <td>{{ stat.teacher.full_name }}</td>
+                        <td>{{ stat.courses_count }}</td>
+                        <td>{{ stat.enrollments }}</td>
+                        <td>{{ stat.revenue|format_currency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue and Enrollment Charts -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-2"></i> Phân phối tuyển sinh
+            </div>
+            <div class="card-body">
+                <canvas id="enrollmentDistributionChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-bar me-2"></i> Doanh thu theo giáo viên
+            </div>
+            <div class="card-body">
+                <canvas id="revenueByTeacherChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Enrollment Distribution Chart
+    const courseLabels = [{% for stat in course_stats %}'{{ stat.course.name }}',{% endfor %}];
+    const enrollmentData = [{% for stat in course_stats %}{{ stat.enrollments }},{% endfor %}];
+    
+    createDoughnutChart(
+        'enrollmentDistributionChart',
+        courseLabels,
+        enrollmentData,
+        'Course Enrollment Distribution'
+    );
+    
+    // Revenue by Teacher Chart
+    const teacherLabels = [{% for stat in teacher_stats %}'{{ stat.teacher.full_name }}',{% endfor %}];
+    const revenueData = [{% for stat in teacher_stats %}{{ stat.revenue }},{% endfor %}];
+    
+    createBarChart(
+        'revenueByTeacherChart',
+        teacherLabels,
+        revenueData,
+        'Revenue ($)',
+        'Revenue by Teacher',
+        true
+    );
+});
+</script>
+{% endblock %}

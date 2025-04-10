@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Thêm Học viên - Trung tâm Đào tạo Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-user-plus me-2"></i> Thêm học sinh mới
+    </h1>
+    <a href="{{ url_for('students.index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i> Quay lại học sinh
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-user-edit me-2"></i> 
+        Thông tin học sinh
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('students.add') }}" class="row g-3 needs-validation" novalidate>
+            <div class="col-md-6">
+                <label for="last_name" class="form-label">Họ</label>
+                <input type="text" class="form-control" id="last_name" name="last_name" required>
+                <div class="invalid-feedback">
+                    Vui lòng nhập họ.
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label for="first_name" class="form-label">Tên</label>
+                <input type="text" class="form-control" id="first_name" name="first_name" required>
+                <div class="invalid-feedback">
+                    Vui lòng nhập tên.
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+                <div class="invalid-feedback">
+
+                    Vui lòng nhập địa chỉ email hợp lệ.
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label for="phone" class="form-label">Số điện thoại</label>
+                <input type="tel" class="form-control" id="phone" name="phone" required>
+                <div class="invalid-feedback">
+                    Vui lòng nhập số điện thoại hợp lệ.
+                </div>
+            </div>
+            <div class="col-12">
+                <label for="address" class="form-label">
+                Địa chỉ</label>
+                <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+            </div>
+            <div class="col-md-6">
+                <label for="date_of_birth" class="form-label">Ngày sinh</label>
+                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth">
+            </div>
+            
+            <div class="col-md-6">
+                <label for="boarding_status" class="form-label">Tình trạng bán trú</label>
+                <select class="form-select" id="boarding_status" name="boarding_status">
+                    <option value="không" selected>Không bán trú</option>
+                    <option value="bán trú">Bán trú</option>
+                    <option value="nội trú">Nội trú</option>
+                </select>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="meal_fee_per_day" class="form-label">Phí ăn mỗi ngày (VNĐ)</label>
+                <input type="number" class="form-control" id="meal_fee_per_day" name="meal_fee_per_day" value="0" min="0">
+                <div class="form-text">Áp dụng cho học sinh bán trú và nội trú</div>
+            </div>
+            
+            <div class="col-12 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i> Lưu học sinh
+                </button>
+                <a href="{{ url_for('students.index') }}" class="btn btn-secondary ms-2">Hủy bỏ</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

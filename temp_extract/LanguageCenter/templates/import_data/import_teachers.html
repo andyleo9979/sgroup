@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Nhập giáo viên từ Excel - Quản lý trung tâm Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-chalkboard-teacher me-2"></i> Nhập danh sách giáo viên từ Excel
+    </h1>
+    <div>
+        <a href="{{ url_for('import_data.index') }}" class="btn btn-secondary me-2">
+            <i class="fas fa-arrow-left me-2"></i> Quay lại
+        </a>
+        <a href="{{ url_for('auth.users') }}" class="btn btn-info">
+            <i class="fas fa-list me-2"></i> Quản lý người dùng
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <i class="fas fa-upload me-2"></i> Tải lên file Excel
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="excel_file" class="form-label">Chọn file Excel</label>
+                        <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xlsx, .xls" required>
+                        <div class="invalid-feedback">
+                            Vui lòng chọn file Excel (.xlsx, .xls)
+                        </div>
+                        <div class="form-text">
+                            Chỉ chấp nhận file Excel (.xlsx, .xls)
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-upload me-2"></i> Tải lên và nhập dữ liệu
+                        </button>
+                        <a href="{{ url_for('import_data.download_teacher_template') }}" class="btn btn-outline-success">
+                            <i class="fas fa-download me-2"></i> Tải mẫu Excel giáo viên
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-info-circle me-2"></i> Hướng dẫn
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Quy trình nhập danh sách giáo viên</h5>
+                <ol>
+                    <li>Tải mẫu Excel giáo viên từ nút "Tải mẫu Excel giáo viên".</li>
+                    <li>Mở file Excel và nhập thông tin giáo viên theo đúng định dạng.</li>
+                    <li>Lưu file Excel.</li>
+                    <li>Quay lại trang này và tải lên file Excel đã điền thông tin.</li>
+                    <li>Hệ thống sẽ xử lý và nhập danh sách giáo viên hàng loạt.</li>
+                </ol>
+                
+                <h5 class="card-title mt-4">Các trường dữ liệu</h5>
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Trường</th>
+                            <th>Bắt buộc</th>
+                            <th>Mô tả</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>username</td>
+                            <td><span class="badge bg-danger">Bắt buộc</span></td>
+                            <td>Tên đăng nhập (phải là duy nhất trong hệ thống)</td>
+                        </tr>
+                        <tr>
+                            <td>email</td>
+                            <td><span class="badge bg-danger">Bắt buộc</span></td>
+                            <td>Email giáo viên (phải là duy nhất trong hệ thống)</td>
+                        </tr>
+                        <tr>
+                            <td>password</td>
+                            <td><span class="badge bg-danger">Bắt buộc</span></td>
+                            <td>Mật khẩu (ít nhất 6 ký tự)</td>
+                        </tr>
+                        <tr>
+                            <td>first_name</td>
+                            <td><span class="badge bg-danger">Bắt buộc</span></td>
+                            <td>Tên giáo viên</td>
+                        </tr>
+                        <tr>
+                            <td>last_name</td>
+                            <td><span class="badge bg-danger">Bắt buộc</span></td>
+                            <td>Họ giáo viên</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i> <strong>Lưu ý:</strong> Mật khẩu được lưu trong file Excel dưới dạng văn bản thường. Vui lòng đảm bảo tính bảo mật khi sử dụng file này.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Validate file input to accept only Excel files
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('excel_file');
+    const form = document.querySelector('form');
+    
+    form.addEventListener('submit', function(event) {
+        if (!fileInput.value) {
+            event.preventDefault();
+            fileInput.classList.add('is-invalid');
+        } else {
+            const fileName = fileInput.value.toLowerCase();
+            if (!fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+                event.preventDefault();
+                fileInput.classList.add('is-invalid');
+            }
+        }
+    });
+    
+    fileInput.addEventListener('change', function() {
+        if (fileInput.value) {
+            const fileName = fileInput.value.toLowerCase();
+            if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                fileInput.classList.remove('is-invalid');
+                fileInput.classList.add('is-valid');
+            } else {
+                fileInput.classList.remove('is-valid');
+                fileInput.classList.add('is-invalid');
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

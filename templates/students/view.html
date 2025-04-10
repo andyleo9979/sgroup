@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ student.full_name }} - 
+Hồ sơ học sinh {% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-user-graduate me-2"></i> Hồ sơ học sinh
+    </h1>
+    <div>
+        <a href="{{ url_for('students.edit', id=student.id) }}" class="btn btn-warning me-2">
+            <i class="fas fa-edit me-2"></i> Sửa
+        </a>
+        <a href="{{ url_for('students.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Quay lại học sinh
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Student Information -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-id-card me-2"></i> 
+                Thông tin cá nhân
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-center mb-4">
+                    <div class="avatar" style="width: 100px; height: 100px; font-size: 2rem;">
+                        {{ student.first_name[0] }}{{ student.last_name[0] }}
+                    </div>
+                </div>
+                <h3 class="text-center mb-4">{{ student.full_name }}</h3>
+                
+                <div class="mb-3">
+                    <p class="mb-1"><strong>
+                        Trạng thái:</strong>
+                        {% if student.active %}
+                            <span class="badge bg-success">Hoạt động</span>
+                        {% else %}
+                            <span class="badge bg-danger">Không hoạt động</span>
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <table class="table">
+                    <tbody>
+                        <tr>
+                            <th><i class="fas fa-envelope me-2"></i> Email:</th>
+                            <td>{{ student.email }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-phone me-2"></i> Số điện thoại:</th>
+                            <td>{{ student.phone }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-home me-2"></i> Địa chỉ:</th>
+                            <td>{{ student.address or 'Not provided' }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-birthday-cake me-2"></i> Ngày sinh:</th>
+                            <td>{{ student.date_of_birth.strftime('%b %d, %Y') if student.date_of_birth else 'Not provided' }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-calendar-check me-2"></i> Ngày tham gia:</th>
+                            <td>{{ student.date_joined.strftime('%d/%m/%Y') }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-utensils me-2"></i> Tình trạng bán trú:</th>
+                            <td>
+                                {% if student.boarding_status == 'không' %}
+                                <span class="badge bg-secondary">Không bán trú</span>
+                                {% elif student.boarding_status == 'bán trú' %}
+                                <span class="badge bg-info">Bán trú</span>
+                                {% elif student.boarding_status == 'nội trú' %}
+                                <span class="badge bg-primary">Nội trú</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% if student.boarding_status != 'không' %}
+                        <tr>
+                            <th><i class="fas fa-money-bill-wave me-2"></i> Phí ăn mỗi ngày:</th>
+                            <td>{{ '{:,.0f}'.format(student.meal_fee_per_day) }} VNĐ</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Statistics -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-2"></i> 
+                Thống kê
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h5 class="text-primary">{{ student.total_courses }}</h5>
+                        <p class="text-muted small">Khóa học</p>
+                    </div>
+                    <div class="col-4">
+                        <h5 class="text-success">{{ '{:,.0f}'.format(student.total_paid) }}</h5>
+                        <p class="text-muted small">Tổng số tiền đã trả (VNĐ)</p>
+                    </div>
+                    {% if student.boarding_status != 'không' %}
+                    <div class="col-4">
+                        <a href="{{ url_for('attendance.student_attendance', student_id=student.id) }}" class="text-decoration-none">
+                            <h5 class="text-info">{{ student.total_attendances() }}</h5>
+                            <p class="text-muted small">Buổi đã tham gia</p>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Course Enrollments -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div><i class="fas fa-graduation-cap me-2"></i> Đăng ký khóa học</div>
+                {% if available_courses %}
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#enrollModal">
+                    <i class="fas fa-plus me-2"></i> Đăng ký khóa học
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+
+                                <th>Khóa học</th>
+                                <th>Ngày</th>
+                                <th>Trạng thái</th>
+                                <th>Giá</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if enrollments %}
+                                {% for enrollment in enrollments %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('courses.view', id=enrollment.course.id) }}">
+                                            {{ enrollment.course.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ enrollment.course.start_date.strftime('%b %d') }} - {{ enrollment.course.end_date.strftime('%b %d, %Y') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if enrollment.status == 'active' else ('primary' if enrollment.status == 'completed' else 'danger') }}">
+                                            {{ enrollment.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ enrollment.course.price|format_currency }}</td>
+                                    <td>
+                                        {% if g.is_admin %}
+                                        <form action="{{ url_for('students.unenroll', student_id=student.id, course_id=enrollment.course.id) }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="confirm" value="yes">
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to unenroll this student?')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center">
+                                    Không đăng ký bất kỳ khóa học nào</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payment History -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div><i class="fas fa-money-bill-wave me-2"></i> 
+                Lịch sử thanh toán</div>
+                <a href="{{ url_for('payments.add_for_student', student_id=student.id) }}" class="btn btn-sm btn-success">
+                    <i class="fas fa-plus me-2"></i> 
+                    Thêm thanh toán
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+
+                                <th>Số biên lai</th>
+                                <th>Ngày</th>
+                                <th>Khóa học</th>
+                                <th>Phương pháp</th>
+                                <th>Số tiền</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if payments %}
+                                {% for payment in payments %}
+                                <tr>
+                                    <td>{{ payment.receipt_number }}</td>
+                                    <td>{{ payment.payment_date.strftime('%b %d, %Y') }}</td>
+                                    <td>{{ payment.course.name }}</td>
+                                    <td>{{ payment.payment_method }}</td>
+                                    <td>{{ payment.amount|format_currency }}</td>
+                                    <td>
+                                        <a href="{{ url_for('payments.view_receipt', id=payment.id) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-file-invoice-dollar"></i>
+                                        </a>
+                                        {% if g.is_admin %}
+                                        <form action="{{ url_for('payments.delete', id=payment.id) }}" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this payment?')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center">
+                                    Không tìm thấy hồ sơ thanh toán</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enroll Modal -->
+<div class="modal fade" id="enrollModal" tabindex="-1" aria-labelledby="enrollModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="enrollModalLabel">Đăng ký khóa học</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('students.enroll', id=student.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="course_id" class="form-label">
+                        Chọn khóa học</label>
+                        <select class="form-select" id="course_id" name="course_id" required>
+                            <option value="">-- 
+                                Chọn một khóa học --</option>
+                            {% for course in available_courses %}
+                            <option value="{{ course.id }}">{{ course.name }} ({{ course.price|format_currency }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="payment_amount" class="form-label">
+                        Số tiền thanh toán ban đầu (tùy chọn)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₫</span>
+                            <input type="number" min="0" class="form-control" id="payment_amount" name="payment_amount">
+                        </div>
+                        <div class="form-text">Để trống nếu thanh toán 0 ₫</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="payment_method" class="form-label">
+                        Phương thức thanh toán</label>
+                        <select class="form-select" id="payment_method" name="payment_method">
+                            <option value="cash">Tiền mặt</option>
+                            <option value="card">Thẻ</option>
+                            <option value="transfer">Chuyển khoản ngân hàng</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-primary">Ghi danh học sinh</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

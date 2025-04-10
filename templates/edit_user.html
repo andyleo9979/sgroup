@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Chỉnh sửa người dùng - Trung tâm đào tạo Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-user-edit me-2"></i> Chỉnh sửa người dùng
+    </h1>
+    <a href="{{ url_for('auth.users') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i> Quay lại Người dùng
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-user-edit me-2"></i> Chỉnh sửa thông tin người dùng
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('auth.edit_user', id=user.id) }}" class="row g-3 needs-validation" novalidate>
+            <div class="col-md-6">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" value="{{ user.username }}" readonly disabled>
+                <div class="form-text">Tên người dùng không thể thay đổi</div>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                <div class="invalid-feedback">
+                    Vui lòng nhập địa chỉ email hợp lệ.
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="last_name" class="form-label">Họ</label>
+                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required>
+                <div class="invalid-feedback">
+                    Vui lòng nhập họ
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="first_name" class="form-label">Tên</label>
+                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required>
+                <div class="invalid-feedback">
+                    Vui lòng nhập tên.
+                </div>
+            </div>
+            
+            <div class="col-md-12">
+                <label for="role" class="form-label">Vai trò</label>
+                <select class="form-select" id="role" name="role" required>
+                    <option value="teacher" {% if user.role == 'teacher' %}selected{% endif %}>Giáo viên</option>
+                    <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Quản trị viên</option>
+                </select>
+            </div>
+            
+            <div class="col-12">
+                <hr>
+                <h5>Thay đổi mật khẩu</h5>
+                <p class="text-muted">Để trống để giữ mật khẩu hiện tại.</p>
+            </div>
+            
+            <div class="col-md-12">
+                <label for="new_password" class="form-label">Mật khẩu mới</label>
+                <input type="password" class="form-control" id="new_password" name="new_password" data-password-validate="true">
+                <div class="form-text">Tối thiểu 8 ký tự</div>
+            </div>
+            
+            <div class="col-12 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i> Cập nhật người dùng
+                </button>
+                <a href="{{ url_for('auth.users') }}" class="btn btn-secondary ms-2">Hủy bỏ</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

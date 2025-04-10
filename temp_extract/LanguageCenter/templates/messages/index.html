@@ -1,0 +1,102 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Gửi tin nhắn mới</h5>
+                </div>
+                <div class="card-body">
+                    <form id="message-form">
+                        <div class="mb-3">
+                            <label for="recipient" class="form-label">Người nhận</label>
+                            <select class="form-select" id="recipient" name="recipient_id" required>
+                                <option value="">Chọn người nhận...</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Nội dung</label>
+                            <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Gửi tin nhắn</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Tin nhắn của tôi</h5>
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    <div id="messages-container">
+                        {% for message in messages %}
+                        <div class="message-item mb-3 p-2 {% if message.sender_id == current_user.id %}bg-light text-end{% endif %} {% if not message.is_read and message.recipient_id == current_user.id %}unread{% endif %}">
+                            <div class="message-header small text-muted">
+                                {% if message.sender_id == current_user.id %}
+                                <span>Đến: {{ message.recipient.full_name }}</span>
+                                {% else %}
+                                <span>Từ: {{ message.sender.full_name }}</span>
+                                {% endif %}
+                                <span class="ms-2">{{ message.created_at.strftime('%H:%M %d-%m-%Y') }}</span>
+                            </div>
+                            <div class="message-content">{{ message.content }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('message-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{{ url_for("messages.send") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Add new message to container
+            const messageHtml = `
+                <div class="message-item mb-3 p-2 bg-light text-end">
+                    <div class="message-header small text-muted">
+                        <span>Đến: ${document.getElementById('recipient').options[document.getElementById('recipient').selectedIndex].text}</span>
+                        <span class="ms-2">${data.message.created_at}</span>
+                    </div>
+                    <div class="message-content">${data.message.content}</div>
+                </div>
+            `;
+            document.getElementById('messages-container').insertAdjacentHTML('afterbegin', messageHtml);
+            
+            // Reset form
+            this.reset();
+        }
+    });
+});
+
+// Mark messages as read when viewed
+document.querySelectorAll('.message-item.unread').forEach(item => {
+    const messageId = item.dataset.messageId;
+    fetch(`{{ url_for("messages.mark_read", id="") }}${messageId}`, {
+        method: 'POST'
+    });
+    item.classList.remove('unread');
+});
+</script>
+{% endblock %}

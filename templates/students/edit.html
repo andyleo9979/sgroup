@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Sửa Học viên - Trung tâm Đào tạo Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-user-edit me-2"></i> 
+        Chỉnh sửa học sinh
+    </h1>
+    <div>
+        <a href="{{ url_for('students.view', id=student.id) }}" class="btn btn-info me-2">
+            <i class="fas fa-eye me-2"></i> Xem học sinh
+        </a>
+        <a href="{{ url_for('students.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Quay lại học sinh
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-user-edit me-2"></i> 
+        Chỉnh sửa thông tin học sinh
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('students.edit', id=student.id) }}" class="row g-3 needs-validation" novalidate>
+            <div class="col-md-6">
+                <label for="last_name" class="form-label">Họ</label>
+                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ student.last_name }}" required>
+                <div class="invalid-feedback">
+                    Vui lòng nhập họ.
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label for="first_name" class="form-label">Tên</label>
+                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ student.first_name }}" required>
+                <div class="invalid-feedback">
+                    Vui lòng nhập tên.
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ student.email }}" required>
+                <div class="invalid-feedback">
+                    Vui lòng nhập địa chỉ email hợp lệ.
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label for="phone" class="form-label">Số điện thoại</label>
+                <input type="tel" class="form-control" id="phone" name="phone" value="{{ student.phone }}" required>
+                <div class="invalid-feedback">
+                    Vui lòng nhập số điện thoại hợp lệ.
+                </div>
+            </div>
+            <div class="col-12">
+                <label for="address" class="form-label">Địa chỉ</label>
+                <textarea class="form-control" id="address" name="address" rows="3">{{ student.address }}</textarea>
+            </div>
+            <div class="col-md-6">
+                <label for="date_of_birth" class="form-label">Ngày sinh</label>
+                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="{{ student.date_of_birth.strftime('%Y-%m-%d') if student.date_of_birth else '' }}">
+            </div>
+            
+            <div class="col-md-6">
+                <label for="boarding_status" class="form-label">Tình trạng bán trú</label>
+                <select class="form-select" id="boarding_status" name="boarding_status">
+                    <option value="không" {% if student.boarding_status == 'không' %}selected{% endif %}>Không bán trú</option>
+                    <option value="bán trú" {% if student.boarding_status == 'bán trú' %}selected{% endif %}>Bán trú</option>
+                    <option value="nội trú" {% if student.boarding_status == 'nội trú' %}selected{% endif %}>Nội trú</option>
+                </select>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="meal_fee_per_day" class="form-label">Phí ăn mỗi ngày (VNĐ)</label>
+                <input type="number" class="form-control" id="meal_fee_per_day" name="meal_fee_per_day" value="{{ student.meal_fee_per_day }}" min="0">
+                <div class="form-text">Áp dụng cho học sinh bán trú và nội trú</div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="form-check form-switch mt-4">
+                    <input class="form-check-input" type="checkbox" id="active" name="active" {% if student.active %}checked{% endif %}>
+                    <label class="form-check-label" for="active">Học sinh đang học</label>
+                </div>
+            </div>
+            <div class="col-12 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i> Cập nhật học sinh
+                </button>
+                <a href="{{ url_for('students.view', id=student.id) }}" class="btn btn-secondary ms-2">Hủy bỏ</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

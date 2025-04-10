@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}Quản lý buổi dạy giáo viên - Trung tâm Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-chalkboard-teacher me-2"></i> 
+        Buổi dạy giáo viên
+        {% if teacher %}
+        - {{ teacher.full_name }}
+        {% endif %}
+    </h1>
+    <div>
+        <a href="{{ url_for('teacher_salary.index') }}" class="btn btn-secondary me-2">
+            <i class="fas fa-arrow-left me-2"></i> Quay lại Bảng lương
+        </a>
+        <a href="{{ url_for('teacher_salary.add_session') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i> Thêm buổi dạy
+        </a>
+    </div>
+</div>
+
+<!-- Filter form -->
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <i class="fas fa-filter me-2"></i> Lọc theo thời gian
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            {% if teacher %}
+            <input type="hidden" name="teacher_id" value="{{ teacher.id }}">
+            {% endif %}
+            <div class="col-md-5">
+                <label for="month" class="form-label">Tháng</label>
+                <select class="form-select" id="month" name="month">
+                    {% for m in months %}
+                    <option value="{{ m }}" {% if m == current_month %}selected{% endif %}>
+                        Tháng {{ m }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label for="year" class="form-label">Năm</label>
+                <select class="form-select" id="year" name="year">
+                    {% for y in years %}
+                    <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>
+                        {{ y }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Lọc</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Sessions Table -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-table me-2"></i> 
+        Danh sách buổi dạy - Tháng {{ current_month }}/{{ current_year }}
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Giáo viên</th>
+                        <th>Khóa học</th>
+                        <th>Số tiết</th>
+                        <th>Ghi chú</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if sessions %}
+                        {% for session in sessions %}
+                        <tr>
+                            <td>{{ session.date.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ session.teacher.full_name }}</td>
+                            <td>{{ session.course.name }}</td>
+                            <td>{{ session.periods }}</td>
+                            <td>{{ session.note or 'Không có ghi chú' }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('teacher_salary.edit_session', id=session.id) }}" class="btn btn-warning" title="Chỉnh sửa">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteSessionModal{{ session.id }}" title="Xóa">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Delete Modal -->
+                                <div class="modal fade" id="deleteSessionModal{{ session.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Xác nhận xóa</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                Bạn có chắc chắn muốn xóa buổi dạy này không? Hành động này không thể hoàn tác.
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                                                <form action="{{ url_for('teacher_salary.delete_session', id=session.id) }}" method="POST">
+                                                    <button type="submit" class="btn btn-danger">Xóa</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">Không có buổi dạy nào trong tháng này.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tự động submit form khi chọn tháng hoặc năm
+    document.getElementById('month').addEventListener('change', function() {
+        this.form.submit();
+    });
+    
+    document.getElementById('year').addEventListener('change', function() {
+        this.form.submit();
+    });
+});
+</script>
+{% endblock %}

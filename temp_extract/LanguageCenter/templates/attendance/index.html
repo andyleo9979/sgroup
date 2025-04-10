@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}Quản lý Điểm Danh{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Quản lý Điểm Danh</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Lọc Điểm Danh</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" action="{{ url_for('attendance.index') }}">
+                        <div class="mb-3">
+                            <label for="from_date" class="form-label">Từ ngày</label>
+                            <input type="date" class="form-control" id="from_date" name="from_date" value="{{ from_date.strftime('%Y-%m-%d') if from_date else selected_date.strftime('%Y-%m-%d') }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="to_date" class="form-label">Đến ngày</label>
+                            <input type="date" class="form-control" id="to_date" name="to_date" value="{{ to_date.strftime('%Y-%m-%d') if to_date else selected_date.strftime('%Y-%m-%d') }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="course_id" class="form-label">Khóa học</label>
+                            <select class="form-select" id="course_id" name="course_id">
+                                <option value="">Tất cả khóa học</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}" {% if selected_course and selected_course.id == course.id %}selected{% endif %}>
+                                    {{ course.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="student_id" class="form-label">Học viên</label>
+                            <select class="form-select" id="student_id" name="student_id">
+                                <option value="">Tất cả học viên</option>
+                                {% for student in students %}
+                                <option value="{{ student.id }}" {% if selected_student and selected_student.id == student.id %}selected{% endif %}>
+                                    {{ student.full_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Áp dụng</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Thao tác</h5>
+                </div>
+                <div class="card-body">
+                    {% if selected_course %}
+                    <a href="{{ url_for('attendance.course_attendance', course_id=selected_course.id, date=selected_date.strftime('%Y-%m-%d')) }}" class="btn btn-success w-100 mb-2">
+                        Điểm danh khóa {{ selected_course.name }}
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('attendance.report') }}" class="btn btn-info w-100 mb-2">
+                        Báo cáo điểm danh và tiền ăn
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        Danh sách điểm danh ngày {{ selected_date.strftime('%d/%m/%Y') }}
+                        {% if selected_course %}
+                        - {{ selected_course.name }}
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if attendances %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Học sinh</th>
+                                    <th>Khóa học</th>
+                                    <th>Trạng thái</th>
+                                    <th>Có ăn</th>
+                                    <th>Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attendance in attendances %}
+                                <tr>
+                                    <td>{{ attendance.date.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('attendance.student_attendance', student_id=attendance.student_id) }}">
+                                            {{ attendance.student.full_name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('attendance.course_attendance', course_id=attendance.course_id) }}">
+                                            {{ attendance.course.name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if attendance.status == 'present' %}
+                                        <span class="badge bg-success">Có mặt</span>
+                                        {% elif attendance.status == 'absent' %}
+                                        <span class="badge bg-danger">Vắng mặt</span>
+                                        {% elif attendance.status == 'late' %}
+                                        <span class="badge bg-warning">Đi muộn</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if attendance.had_meal %}
+                                        <span class="badge bg-info">Có</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Không</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if attendance.note %}{{ attendance.note }}{% endif %}
+                                        <button type="button" class="btn btn-sm btn-info ms-2" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#commentModal{{ attendance.id }}">
+                                            <i class="fas fa-comment"></i> Nhận xét
+                                        </button>
+
+                                        <!-- Modal Nhận xét -->
+                                        <div class="modal fade" id="commentModal{{ attendance.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Nhận xét buổi học</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p><strong>Học sinh:</strong> {{ attendance.student.full_name }}</p>
+                                                        <p><strong>Ngày:</strong> {{ attendance.date.strftime('%d/%m/%Y') }}</p>
+                                                        <p><strong>Khóa học:</strong> {{ attendance.course.name }}</p>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Ghi chú:</label>
+                                                            <textarea class="form-control" readonly>{{ attendance.note or '' }}</textarea>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Nhận xét buổi học:</label>
+                                                            <textarea class="form-control" readonly>{{ attendance.comment or '' }}</textarea>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">Không có dữ liệu điểm danh cho ngày này.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

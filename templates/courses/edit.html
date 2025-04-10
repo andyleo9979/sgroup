@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Chỉnh sửa khóa học - Quản lý trung tâm Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-edit me-2"></i> Chỉnh sửa khóa học
+    </h1>
+    <div>
+        <a href="{{ url_for('courses.view', id=course.id) }}" class="btn btn-info me-2">
+            <i class="fas fa-eye me-2"></i> Xem khóa học
+        </a>
+        <a href="{{ url_for('courses.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Quay lại khóa học
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-edit me-2"></i> Chỉnh sửa thông tin khóa học
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('courses.edit', id=course.id) }}" class="row g-3 needs-validation" novalidate>
+            <div class="col-md-12">
+                <label for="name" class="form-label">Tên khóa học</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ course.name }}" required>
+                <div class="invalid-feedback">
+                    Vui lòng nhập tên khóa học.
+                </div>
+            </div>
+            
+            <div class="col-md-12">
+                <label for="description" class="form-label">Miêu tả</label>
+                <textarea class="form-control" id="description" name="description" rows="4">{{ course.description }}</textarea>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="start_date" class="form-label">
+                    Ngày bắt đầu</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ course.start_date.strftime('%Y-%m-%d') }}" required>
+                <div class="invalid-feedback">
+
+                    Vui lòng chọn ngày bắt đầu.
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="end_date" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ course.end_date.strftime('%Y-%m-%d') }}" required>
+                <div class="invalid-feedback">
+
+                    Vui lòng chọn ngày kết thúc.
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="price" class="form-label">
+                    Giá ($)</label>
+                <input type="number" step="0.01" min="0" class="form-control" id="price" name="price" value="{{ course.price }}" required>
+                <div class="invalid-feedback">
+                    Vui lòng nhập giá trị hợp lệ.
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <label for="max_students" class="form-label">
+                    Số học sinh tối đa</label>
+                <input type="number" min="1" class="form-control" id="max_students" name="max_students" value="{{ course.max_students }}" required>
+                <div class="invalid-feedback">
+
+                    Vui lòng nhập số lượng học sinh hợp lệ.
+                </div>
+            </div>
+            
+            {% if current_user.role == 'admin' %}
+            <div class="col-md-6">
+                <label for="teacher_id" class="form-label">Giáo viên</label>
+                <div class="input-group">
+                    <select class="form-select" id="teacher_id" name="teacher_id">
+                        <option value="">-- Không có giáo viên được chỉ định --</option>
+                        {% for teacher in teachers %}
+                        <option value="{{ teacher.id }}" {% if teacher.id == course.teacher_id %}selected{% endif %}>{{ teacher.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <a href="{{ url_for('auth.add_user') }}?role=teacher&returnTo=courses.edit&courseId={{ course.id }}" class="btn btn-outline-primary">
+                        <i class="fas fa-plus"></i> 
+                        Thêm giáo viên
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="col-md-6">
+                <label for="total_sessions" class="form-label">Tổng số buổi học</label>
+                <input type="number" class="form-control" id="total_sessions" name="total_sessions" value="{{ course.total_sessions }}" min="0">
+                <div class="form-text">Số buổi học dự kiến của khóa học</div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="form-check form-switch mt-4">
+                    <input class="form-check-input" type="checkbox" id="active" name="active" {% if course.active %}checked{% endif %}>
+                    <label class="form-check-label" for="active">Kích hoạt khóa học</label>
+                </div>
+                <div class="form-text">Các khóa học không hoạt động sẽ không chấp nhận đăng ký mới</div>
+            </div>
+            
+            <div class="col-12 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i> Cập nhật khóa học
+                </button>
+                <a href="{{ url_for('courses.index') }}" class="btn btn-secondary ms-2">Hủy bỏ</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Date validation - ensure end date is after start date
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    
+    function validateDates() {
+        if (startDateInput.value && endDateInput.value) {
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
+            
+            if (endDate <= startDate) {
+                endDateInput.setCustomValidity('End date must be after start date');
+            } else {
+                endDateInput.setCustomValidity('');
+            }
+        }
+    }
+    
+    startDateInput.addEventListener('change', validateDates);
+    endDateInput.addEventListener('change', validateDates);
+});
+</script>
+{% endblock %}

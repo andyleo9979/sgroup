@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+
+{% block title %}Quản lý Học viên - Trung tâm Đào tạo Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-user-graduate me-2"></i> Học sinh
+    </h1>
+    <div>
+        <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#attendanceModal">
+            <i class="fas fa-clipboard-check me-2"></i> Điểm danh nhanh
+        </button>
+        <a href="{{ url_for('students.add') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i> Thêm học sinh mới
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <i class="fas fa-list me-2"></i> Danh sách học sinh
+            </div>
+            <div class="col-md-4">
+                <input type="text" id="studentSearch" class="form-control" placeholder="Search students...">
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover" id="studentsTable">
+                <thead>
+                    <tr>
+
+                        <th>ID</th>
+                        <th>Tên</th>
+                        <th>Email</th>
+                        <th>Số điện thoại</th>
+                        <th>Khóa học</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if students %}
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.id }}</td>
+                            <td>{{ student.full_name }}</td>
+                            <td>{{ student.email }}</td>
+                            <td>{{ student.phone }}</td>
+                            <td>{{ student.enrollments|length }}</td>
+                            <td>
+                                {% if student.active %}
+                                <span class="badge bg-success">Hoạt động</span>
+                                {% else %}
+                                <span class="badge bg-danger">Không hoạt động</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('students.view', id=student.id) }}" class="btn btn-info" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('students.edit', id=student.id) }}" class="btn btn-warning" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if g.is_admin %}
+                                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteStudentModal{{ student.id }}" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    
+                                    <!-- Delete Modal -->
+                                    <div class="modal fade" id="deleteStudentModal{{ student.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">
+                                                        Xác nhận Xóa</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+
+                                                    Bạn có chắc chắn muốn xóa học sinh không? <strong>{{ student.full_name }}</strong>? 
+                                                    Không thể hoàn tác hành động này.
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                                                    <form action="{{ url_for('students.delete', id=student.id) }}" method="POST">
+                                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">
+                            Không tìm thấy học sinh nào</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<!-- Attendance Modal -->
+<div class="modal fade" id="attendanceModal" tabindex="-1" aria-labelledby="attendanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="attendanceModalLabel">
+                    <i class="fas fa-clipboard-check me-2"></i> Điểm danh nhanh
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quickAttendanceForm" method="POST" action="{{ url_for('students.take_attendance') }}">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="course_id" class="form-label">Khóa học</label>
+                            <select class="form-select" id="course_id" name="course_id" required>
+                                <option value="">Chọn khóa học</option>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}">{{ course.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="attendance_date" class="form-label">Ngày điểm danh</label>
+                            <input type="date" class="form-control" id="attendance_date" name="attendance_date" 
+                                value="{{ today.strftime('%Y-%m-%d') }}" required>
+                        </div>
+                    </div>
+                    
+                    <div id="studentListContainer" class="mt-4" style="display: none;">
+                        <h5>Danh sách học sinh</h5>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="selectAllStudents">
+                            <label class="form-check-label" for="selectAllStudents">Chọn tất cả</label>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 5%">Chọn</th>
+                                        <th style="width: 30%">Tên học sinh</th>
+                                        <th style="width: 15%">Trạng thái</th>
+                                        <th style="width: 15%">Có ăn</th>
+                                        <th style="width: 35%">Ghi chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentListBody">
+                                    <!-- Danh sách học sinh sẽ được thêm bằng JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-success" id="saveAttendanceBtn" style="display: none;">
+                    <i class="fas fa-save me-2"></i> Lưu điểm danh
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Student search functionality
+    const searchInput = document.getElementById('studentSearch');
+    const table = document.getElementById('studentsTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    searchInput.addEventListener('keyup', function() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        for (let i = 0; i < rows.length; i++) {
+            const rowData = rows[i].textContent.toLowerCase();
+            if (rowData.includes(searchTerm)) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    });
+    
+    // Quick attendance functionality
+    const courseSelect = document.getElementById('course_id');
+    const studentListContainer = document.getElementById('studentListContainer');
+    const studentListBody = document.getElementById('studentListBody');
+    const saveAttendanceBtn = document.getElementById('saveAttendanceBtn');
+    const attendanceForm = document.getElementById('quickAttendanceForm');
+    const selectAllCheckbox = document.getElementById('selectAllStudents');
+    
+    // Khi người dùng chọn khóa học, hiển thị danh sách học sinh
+    courseSelect.addEventListener('change', function() {
+        if (courseSelect.value) {
+            // Gọi API để lấy danh sách học sinh của khóa học
+            fetch(`/students/get-students/${courseSelect.value}`)
+                .then(response => response.json())
+                .then(data => {
+                    studentListBody.innerHTML = ''; // Xóa danh sách cũ
+                    
+                    if (data.students && data.students.length > 0) {
+                        data.students.forEach(student => {
+                            const row = document.createElement('tr');
+                            
+                            // Checkbox chọn học sinh
+                            const checkboxCell = document.createElement('td');
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.className = 'form-check-input student-checkbox';
+                            checkbox.name = 'student_id';
+                            checkbox.value = student.id;
+                            checkbox.checked = true; // Mặc định chọn tất cả
+                            checkboxCell.appendChild(checkbox);
+                            
+                            // Tên học sinh
+                            const nameCell = document.createElement('td');
+                            nameCell.textContent = student.full_name;
+                            
+                            // Trạng thái điểm danh
+                            const statusCell = document.createElement('td');
+                            const statusSelect = document.createElement('select');
+                            statusSelect.className = 'form-select';
+                            statusSelect.name = `status_${student.id}`;
+                            
+                            const statuses = [
+                                { value: 'present', text: 'Có mặt' },
+                                { value: 'absent', text: 'Vắng mặt' },
+                                { value: 'late', text: 'Đi muộn' }
+                            ];
+                            
+                            statuses.forEach(status => {
+                                const option = document.createElement('option');
+                                option.value = status.value;
+                                option.textContent = status.text;
+                                if (status.value === 'present') option.selected = true;
+                                statusSelect.appendChild(option);
+                            });
+                            
+                            statusCell.appendChild(statusSelect);
+                            
+                            // Checkbox ăn tại trung tâm
+                            const mealCell = document.createElement('td');
+                            const mealCheckbox = document.createElement('input');
+                            mealCheckbox.type = 'checkbox';
+                            mealCheckbox.className = 'form-check-input';
+                            mealCheckbox.name = `had_meal_${student.id}`;
+                            mealCheckbox.checked = student.boarding_status !== 'không';
+                            mealCell.appendChild(mealCheckbox);
+                            
+                            // Ghi chú
+                            const noteCell = document.createElement('td');
+                            const noteInput = document.createElement('input');
+                            noteInput.type = 'text';
+                            noteInput.className = 'form-control';
+                            noteInput.name = `note_${student.id}`;
+                            noteInput.placeholder = 'Ghi chú (nếu có)';
+                            noteCell.appendChild(noteInput);
+                            
+                            // Thêm các ô vào hàng
+                            row.appendChild(checkboxCell);
+                            row.appendChild(nameCell);
+                            row.appendChild(statusCell);
+                            row.appendChild(mealCell);
+                            row.appendChild(noteCell);
+                            
+                            // Thêm hàng vào bảng
+                            studentListBody.appendChild(row);
+                        });
+                        
+                        // Hiển thị danh sách và nút lưu
+                        studentListContainer.style.display = 'block';
+                        saveAttendanceBtn.style.display = 'block';
+                        
+                        // Thiết lập chức năng chọn tất cả
+                        updateSelectAllCheckbox();
+                    } else {
+                        studentListBody.innerHTML = '<tr><td colspan="5" class="text-center">Không có học sinh nào đăng ký khóa học này</td></tr>';
+                        studentListContainer.style.display = 'block';
+                        saveAttendanceBtn.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching students:', error);
+                    studentListBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Đã xảy ra lỗi khi tải danh sách học sinh</td></tr>';
+                    studentListContainer.style.display = 'block';
+                    saveAttendanceBtn.style.display = 'none';
+                });
+        } else {
+            studentListContainer.style.display = 'none';
+            saveAttendanceBtn.style.display = 'none';
+        }
+    });
+    
+    // Chức năng chọn tất cả
+    selectAllCheckbox.addEventListener('change', function() {
+        const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+        studentCheckboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+    });
+    
+    // Cập nhật trạng thái của checkbox "Chọn tất cả"
+    function updateSelectAllCheckbox() {
+        const studentCheckboxes = document.querySelectorAll('.student-checkbox');
+        const checkedCount = document.querySelectorAll('.student-checkbox:checked').length;
+        
+        selectAllCheckbox.checked = studentCheckboxes.length > 0 && checkedCount === studentCheckboxes.length;
+        selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < studentCheckboxes.length;
+        
+        // Thêm sự kiện cho từng checkbox học sinh
+        studentCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectAllCheckbox);
+        });
+    }
+    
+    // Xử lý lưu điểm danh
+    saveAttendanceBtn.addEventListener('click', function() {
+        if (document.querySelectorAll('.student-checkbox:checked').length === 0) {
+            alert('Vui lòng chọn ít nhất một học sinh để điểm danh.');
+            return;
+        }
+        
+        attendanceForm.submit();
+    });
+});
+</script>
+{% endblock %}

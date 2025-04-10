@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Chấm công giáo viên - Quản lý trung tâm Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-user-clock me-2"></i> Chấm công giáo viên
+    </h1>
+    <div>
+        <a href="{{ url_for('teacher_attendance.take_attendance') }}" class="btn btn-primary">
+            <i class="fas fa-user-check me-2"></i> Chấm công mới
+        </a>
+        <a href="{{ url_for('teacher_attendance.report') }}" class="btn btn-info ms-2">
+            <i class="fas fa-chart-bar me-2"></i> Báo cáo
+        </a>
+    </div>
+</div>
+
+<!-- Filter Form -->
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-filter me-2"></i> Lọc dữ liệu
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('teacher_attendance.index') }}" class="row g-3">
+            <div class="col-md-4">
+                <label for="month" class="form-label">Tháng</label>
+                <select class="form-select" id="month" name="month">
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {% if m == month %}selected{% endif %}>Tháng {{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="year" class="form-label">Năm</label>
+                <select class="form-select" id="year" name="year">
+                    {% for y in range(2020, 2031) %}
+                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="teacher_id" class="form-label">Giáo viên</label>
+                <select class="form-select" id="teacher_id" name="teacher_id">
+                    <option value="">Tất cả giáo viên</option>
+                    {% for teacher in teachers %}
+                    <option value="{{ teacher.id }}" {% if teacher.id == selected_teacher %}selected{% endif %}>{{ teacher.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-search me-2"></i> Tìm kiếm
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    {% for teacher_id, stats in summary.items() %}
+    <div class="col-md-6 col-lg-4 mb-3">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">{{ stats.teacher.full_name }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <p><i class="fas fa-calendar-check text-success me-2"></i> <strong>Có mặt:</strong> {{ stats.present }}</p>
+                        <p><i class="fas fa-calendar-times text-danger me-2"></i> <strong>Vắng mặt:</strong> {{ stats.absent }}</p>
+                    </div>
+                    <div class="col-6">
+                        <p><i class="fas fa-clock text-warning me-2"></i> <strong>Đi muộn:</strong> {{ stats.late }}</p>
+                        <p><i class="fas fa-umbrella-beach text-info me-2"></i> <strong>Nghỉ phép:</strong> {{ stats.leave }}</p>
+                    </div>
+                </div>
+                <hr>
+                <p><i class="fas fa-hourglass-half me-2"></i> <strong>Tổng giờ làm:</strong> {{ stats.total_hours }} giờ</p>
+                <a href="{{ url_for('teacher_attendance.teacher_detail', teacher_id=stats.teacher.id) }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-info-circle me-2"></i> Xem chi tiết
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Attendance Table -->
+<div class="card mb-4">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-list me-2"></i> Danh sách chấm công (Tháng {{ month }}/{{ year }})
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Giáo viên</th>
+                        <th>Giờ vào</th>
+                        <th>Giờ ra</th>
+                        <th>Trạng thái</th>
+                        <th>Số giờ</th>
+                        <th>Ghi chú</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if attendances %}
+                        {% for attendance in attendances %}
+                        <tr>
+                            <td>{{ attendance.date.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <a href="{{ url_for('teacher_attendance.teacher_detail', teacher_id=attendance.teacher_id) }}">
+                                    {{ attendance.teacher.full_name }}
+                                </a>
+                            </td>
+                            <td>{{ attendance.formatted_time_in }}</td>
+                            <td>{{ attendance.formatted_time_out }}</td>
+                            <td>
+                                {% if attendance.status == 'present' %}
+                                <span class="badge bg-success">Có mặt</span>
+                                {% elif attendance.status == 'absent' %}
+                                <span class="badge bg-danger">Vắng mặt</span>
+                                {% elif attendance.status == 'late' %}
+                                <span class="badge bg-warning text-dark">Đi muộn</span>
+                                {% elif attendance.status == 'leave' %}
+                                <span class="badge bg-info">Nghỉ phép</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ attendance.working_hours }} giờ</td>
+                            <td>{{ attendance.note or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">Không có dữ liệu chấm công trong khoảng thời gian này</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

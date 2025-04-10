@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}Cài đặt đơn giá tiết dạy - Trung tâm Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-cog me-2"></i> Cài đặt đơn giá tiết dạy theo khóa học
+    </h1>
+    <div>
+        <a href="{{ url_for('teacher_salary.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Quay lại Bảng lương
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-book-reader me-2"></i> Cài đặt đơn giá tiết dạy cho khóa học
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('teacher_salary.settings') }}">
+                    <div class="mb-3">
+                        <label for="course_id" class="form-label">Chọn khóa học</label>
+                        <select class="form-select" id="course_id" name="course_id" required>
+                            <option value="">-- Chọn khóa học --</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}">{{ course.name }} {% if course.teacher %}(GV: {{ course.teacher.full_name }}){% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="teaching_rate" class="form-label">Đơn giá/tiết (VND)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₫</span>
+                            <input type="number" class="form-control" id="teaching_rate" name="teaching_rate" min="0" step="1000" placeholder="Ví dụ: 200000">
+                        </div>
+                        <div class="form-text">Số tiền được trả cho mỗi tiết giảng dạy trong khóa học này.</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Lưu cài đặt
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-user-cog me-2"></i> Cài đặt phí trừ khi đi muộn/vắng mặt
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('teacher_salary.update_fee_settings') }}">
+                    <div class="mb-3">
+                        <label for="teacher_id" class="form-label">Chọn giáo viên</label>
+                        <select class="form-select" id="teacher_id" name="teacher_id" required>
+                            <option value="">-- Chọn giáo viên --</option>
+                            {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}">{{ teacher.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="late_fee" class="form-label">Phí trừ khi đi muộn (VND)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₫</span>
+                            <input type="number" class="form-control" id="late_fee" name="late_fee" min="0" step="1000" placeholder="Ví dụ: 50000">
+                        </div>
+                        <div class="form-text">Số tiền bị trừ mỗi lần giáo viên đi muộn.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="absence_fee" class="form-label">Phí trừ khi vắng mặt (VND)</label>
+                        <div class="input-group">
+                            <span class="input-group-text">₫</span>
+                            <input type="number" class="form-control" id="absence_fee" name="absence_fee" min="0" step="1000" placeholder="Ví dụ: 100000">
+                        </div>
+                        <div class="form-text">Số tiền bị trừ mỗi lần giáo viên vắng mặt không phép.</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-save me-2"></i> Lưu cài đặt phí trừ
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i> Thông tin hướng dẫn
+            </div>
+            <div class="card-body">
+                <h5>Cài đặt đơn giá dạy học theo khóa học</h5>
+                <p>Hệ thống tính lương sẽ dựa trên đơn giá tiết dạy của từng khóa học, không phải theo từng giáo viên:</p>
+                <ul>
+                    <li><strong>Đơn giá/tiết cho khóa học:</strong> Số tiền được trả cho mỗi tiết giảng dạy trong một khóa học cụ thể. Hệ thống sẽ tính lương cơ bản dựa trên số tiết dạy nhân với đơn giá của khóa học tương ứng.</li>
+                    <li><strong>Phí trừ khi đi muộn/vắng mặt:</strong> Phí trừ vẫn được áp dụng theo từng giáo viên, không phụ thuộc vào khóa học.</li>
+                </ul>
+                
+                <div class="alert alert-info" role="alert">
+                    <i class="fas fa-lightbulb me-2"></i> <strong>Lưu ý:</strong> Khi tính lương, hệ thống sẽ cộng tất cả các khoản tiền từ các khóa học mà giáo viên dạy, dựa trên đơn giá của từng khóa học cụ thể.
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-table me-2"></i> Danh sách đơn giá theo khóa học
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Khóa học</th>
+                                <th>Giáo viên</th>
+                                <th>Đơn giá/tiết</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if courses %}
+                                {% for course in courses %}
+                                <tr>
+                                    <td>{{ course.name }}</td>
+                                    <td>{{ course.teacher.full_name if course.teacher else "Chưa phân công" }}</td>
+                                    <td>{{ course.teaching_rate|format_currency }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center">Không có dữ liệu khóa học</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Lấy thông tin đơn giá khi chọn khóa học
+    const courseSelect = document.getElementById('course_id');
+    const teachingRateInput = document.getElementById('teaching_rate');
+    
+    courseSelect.addEventListener('change', function() {
+        const courseId = this.value;
+        if (!courseId) {
+            // Nếu không chọn khóa học, reset form
+            teachingRateInput.value = '';
+            return;
+        }
+        
+        // Gọi API để lấy thông tin đơn giá của khóa học
+        fetch(`/teacher-salary/api/course-rate/${courseId}`)
+            .then(response => response.json())
+            .then(data => {
+                teachingRateInput.value = data.teaching_rate || '';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    });
+    
+    // Lấy thông tin phí trừ khi chọn giáo viên
+    const teacherSelect = document.getElementById('teacher_id');
+    const lateFeeInput = document.getElementById('late_fee');
+    const absenceFeeInput = document.getElementById('absence_fee');
+    
+    teacherSelect.addEventListener('change', function() {
+        const teacherId = this.value;
+        if (!teacherId) {
+            // Nếu không chọn giáo viên, reset form
+            lateFeeInput.value = '';
+            absenceFeeInput.value = '';
+            return;
+        }
+        
+        // Gọi API để lấy thông tin phí trừ của giáo viên
+        fetch(`/teacher-salary/api/teacher-fees/${teacherId}`)
+            .then(response => response.json())
+            .then(data => {
+                lateFeeInput.value = data.late_fee || '';
+                absenceFeeInput.value = data.absence_fee || '';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    });
+});
+</script>
+{% endblock %}

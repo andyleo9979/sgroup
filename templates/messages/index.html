@@ -1,0 +1,343 @@
+
+{% extends "base.html" %}
+
+{% block title %}Tin nhắn nội bộ - Trung tâm Đào tạo SGROUP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5">
+            <i class="fas fa-comments me-2"></i> Hệ thống tin nhắn nội bộ
+        </h1>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-paper-plane me-2"></i>Gửi tin nhắn mới</h5>
+                </div>
+                <div class="card-body">
+                    <form id="message-form">
+                        <div class="mb-3">
+                            <label for="recipient" class="form-label">Người nhận</label>
+                            <select class="form-select" id="recipient" name="recipient_id" required>
+                                <option value="">Chọn người nhận...</option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.full_name }} ({{ user.role }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Tiêu đề</label>
+                            <input type="text" class="form-control" id="subject" name="subject" placeholder="Nhập tiêu đề tin nhắn">
+                        </div>
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Nội dung</label>
+                            <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-paper-plane me-2"></i>Gửi tin nhắn
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0"><i class="fas fa-user-friends me-2"></i>Liên hệ</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                    {% for user in users %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ user.full_name }}
+                            <span class="badge {% if user.role == 'sadmin' %}bg-danger{% elif user.role == 'admin' %}bg-warning{% else %}bg-info{% endif %}">{{ user.role }}</span>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <ul class="nav nav-tabs mb-3" id="messagesTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-messages" type="button" role="tab" aria-controls="all-messages" aria-selected="true">
+                        <i class="fas fa-inbox me-2"></i>Tất cả
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="received-tab" data-bs-toggle="tab" data-bs-target="#received-messages" type="button" role="tab" aria-controls="received-messages" aria-selected="false">
+                        <i class="fas fa-download me-2"></i>Đã nhận
+                        {% set unread_count = messages|selectattr('recipient_id', 'eq', current_user.id)|selectattr('is_read', 'eq', false)|list|length %}
+                        {% if unread_count > 0 %}
+                        <span class="badge bg-danger">{{ unread_count }}</span>
+                        {% endif %}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="sent-tab" data-bs-toggle="tab" data-bs-target="#sent-messages" type="button" role="tab" aria-controls="sent-messages" aria-selected="false">
+                        <i class="fas fa-upload me-2"></i>Đã gửi
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="messagesTabContent">
+                <div class="tab-pane fade show active" id="all-messages" role="tabpanel" aria-labelledby="all-tab">
+                    <div class="card">
+                        <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                            <div id="messages-container">
+                                {% for message in messages %}
+                                <div class="message-item mb-3 p-3 border rounded {% if message.sender_id == current_user.id %}border-primary{% else %}border-success{% endif %} {% if not message.is_read and message.recipient_id == current_user.id %}bg-light-success unread{% endif %}" data-message-id="{{ message.id }}">
+                                    <div class="message-header d-flex justify-content-between">
+                                        <div>
+                                            {% if message.sender_id == current_user.id %}
+                                            <span class="badge bg-primary">Đã gửi</span>
+                                            <span>Đến: <strong>{{ message.recipient.full_name }}</strong></span>
+                                            {% else %}
+                                            <span class="badge {% if not message.is_read %}bg-success{% else %}bg-secondary{% endif %}">{% if not message.is_read %}Mới{% else %}Đã đọc{% endif %}</span>
+                                            <span>Từ: <strong>{{ message.sender.full_name }}</strong></span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">{{ message.created_at.strftime('%H:%M %d-%m-%Y') }}</small>
+                                    </div>
+                                    
+                                    {% if message.subject %}
+                                    <div class="message-subject my-2">
+                                        <h6>{{ message.subject }}</h6>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="message-content mt-2">
+                                        {{ message.content|nl2br }}
+                                    </div>
+                                    
+                                    {% if message.recipient_id == current_user.id %}
+                                    <div class="message-actions mt-2 text-end">
+                                        <button class="btn btn-sm btn-outline-primary reply-btn" data-user="{{ message.sender.id }}" data-name="{{ message.sender.full_name }}">
+                                            <i class="fas fa-reply"></i> Trả lời
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">Không có tin nhắn nào.</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-pane fade" id="received-messages" role="tabpanel" aria-labelledby="received-tab">
+                    <div class="card">
+                        <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                            {% set received_messages = messages|selectattr('recipient_id', 'eq', current_user.id)|list %}
+                            {% if received_messages|length > 0 %}
+                                {% for message in received_messages %}
+                                <div class="message-item mb-3 p-3 border rounded border-success {% if not message.is_read %}bg-light-success unread{% endif %}" data-message-id="{{ message.id }}">
+                                    <div class="message-header d-flex justify-content-between">
+                                        <div>
+                                            <span class="badge {% if not message.is_read %}bg-success{% else %}bg-secondary{% endif %}">{% if not message.is_read %}Mới{% else %}Đã đọc{% endif %}</span>
+                                            <span>Từ: <strong>{{ message.sender.full_name }}</strong></span>
+                                        </div>
+                                        <small class="text-muted">{{ message.created_at.strftime('%H:%M %d-%m-%Y') }}</small>
+                                    </div>
+                                    
+                                    {% if message.subject %}
+                                    <div class="message-subject my-2">
+                                        <h6>{{ message.subject }}</h6>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="message-content mt-2">
+                                        {{ message.content|nl2br }}
+                                    </div>
+                                    
+                                    <div class="message-actions mt-2 text-end">
+                                        <button class="btn btn-sm btn-outline-primary reply-btn" data-user="{{ message.sender.id }}" data-name="{{ message.sender.full_name }}">
+                                            <i class="fas fa-reply"></i> Trả lời
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">Không có tin nhắn đã nhận.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tab-pane fade" id="sent-messages" role="tabpanel" aria-labelledby="sent-tab">
+                    <div class="card">
+                        <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                            {% set sent_messages = messages|selectattr('sender_id', 'eq', current_user.id)|list %}
+                            {% if sent_messages|length > 0 %}
+                                {% for message in sent_messages %}
+                                <div class="message-item mb-3 p-3 border rounded border-primary">
+                                    <div class="message-header d-flex justify-content-between">
+                                        <div>
+                                            <span class="badge bg-primary">Đã gửi</span>
+                                            <span>Đến: <strong>{{ message.recipient.full_name }}</strong></span>
+                                        </div>
+                                        <small class="text-muted">{{ message.created_at.strftime('%H:%M %d-%m-%Y') }}</small>
+                                    </div>
+                                    
+                                    {% if message.subject %}
+                                    <div class="message-subject my-2">
+                                        <h6>{{ message.subject }}</h6>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="message-content mt-2">
+                                        {{ message.content|nl2br }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-paper-plane fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">Không có tin nhắn đã gửi.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Hàm để chuyển xuống dòng trong text thành thẻ <br>
+function nl2br(str) {
+    if (typeof str === 'undefined' || str === null) {
+        return '';
+    }
+    return (str + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1<br>$2');
+}
+
+// Gửi tin nhắn
+document.getElementById('message-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const recipientSelect = document.getElementById('recipient');
+    const recipientName = recipientSelect.options[recipientSelect.selectedIndex].text;
+    const subject = document.getElementById('subject').value;
+    const content = document.getElementById('content').value;
+    
+    fetch('{{ url_for("messages.send") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            // Add new message to container
+            const messageHtml = `
+                <div class="message-item mb-3 p-3 border rounded border-primary">
+                    <div class="message-header d-flex justify-content-between">
+                        <div>
+                            <span class="badge bg-primary">Đã gửi</span>
+                            <span>Đến: <strong>${recipientName}</strong></span>
+                        </div>
+                        <small class="text-muted">${data.message.created_at}</small>
+                    </div>
+                    ${subject ? `<div class="message-subject my-2"><h6>${subject}</h6></div>` : ''}
+                    <div class="message-content mt-2">
+                        ${nl2br(content)}
+                    </div>
+                </div>
+            `;
+            
+            // Thêm vào các tab
+            document.getElementById('messages-container').insertAdjacentHTML('afterbegin', messageHtml);
+            document.querySelector('#sent-messages .card-body').insertAdjacentHTML('afterbegin', messageHtml);
+            
+            // Cập nhật giao diện nếu chưa có tin nhắn nào trước đó
+            document.querySelectorAll('.text-center.py-5').forEach(emptyState => {
+                emptyState.remove();
+            });
+            
+            // Reset form
+            this.reset();
+            
+            // Thông báo thành công
+            alert('Tin nhắn đã được gửi thành công!');
+        } else {
+            alert('Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại!');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại!');
+    });
+});
+
+// Đánh dấu tin nhắn đã đọc khi xem
+document.querySelectorAll('.message-item.unread').forEach(item => {
+    const messageId = item.dataset.messageId;
+    if (messageId) {
+        fetch(`{{ url_for("messages.mark_read", id="") }}${messageId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                item.classList.remove('unread');
+                item.classList.remove('bg-light-success');
+                const badgeElement = item.querySelector('.badge');
+                if (badgeElement) {
+                    badgeElement.className = 'badge bg-secondary';
+                    badgeElement.textContent = 'Đã đọc';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error marking message as read:', error);
+        });
+    }
+});
+
+// Xử lý nút trả lời
+document.querySelectorAll('.reply-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const userId = this.dataset.user;
+        const userName = this.dataset.name;
+        
+        // Chọn người nhận trong form gửi tin nhắn
+        document.getElementById('recipient').value = userId;
+        
+        // Focus vào ô nội dung
+        document.getElementById('content').focus();
+        
+        // Cuộn đến form gửi tin nhắn
+        document.getElementById('message-form').scrollIntoView({ behavior: 'smooth' });
+    });
+});
+</script>
+{% endblock %}

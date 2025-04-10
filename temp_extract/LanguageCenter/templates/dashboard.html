@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+
+{% block title %}Trang tổng quan - Trung tâm Sgroup{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-5 mb-4">
+            <i class="fas fa-tachometer-alt me-2"></i> Tổng quan
+        </h1>
+    </div>
+</div>
+
+<!-- Stats Row -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary bg-gradient dashboard-card">
+            <div class="card-body d-flex align-items-center">
+                <div class="stat-icon me-3">
+                    <i class="fas fa-user-graduate text-white-50"></i>
+                </div>
+                <div>
+                    <div class="stat-value text-white">{{ stats.total_students }}</div>
+                    <div class="stat-label">Số liệu về học sinh</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success bg-gradient dashboard-card">
+            <div class="card-body d-flex align-items-center">
+                <div class="stat-icon me-3">
+                    <i class="fas fa-book text-white-50"></i>
+                </div>
+                <div>
+                    <div class="stat-value text-white">{{ stats.total_courses }}</div>
+                    <div class="stat-label">Số liệu khóa học</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info bg-gradient dashboard-card">
+            <div class="card-body d-flex align-items-center">
+                <div class="stat-icon me-3">
+                    <i class="fas fa-dollar-sign text-white-50"></i>
+                </div>
+                <div>
+                    <div class="stat-value text-white">{{ stats.total_revenue|format_currency }}</div>
+                    <div class="stat-label">Tổng doanh thu</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-line me-2"></i> Xu hướng doanh thu
+            </div>
+            <div class="card-body">
+                <canvas id="revenueChart" data-revenue="{{ monthly_revenue|tojson }}"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-pie me-2"></i> Đăng ký khóa học
+            </div>
+            <div class="card-body">
+                <canvas id="enrollmentChart" data-enrollments="{{ course_enrollments|tojson }}"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Data Rows -->
+<div class="row">
+    <!-- Left Column -->
+    <div class="col-md-6">
+        <!-- Recent Payments -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-money-bill-wave me-2"></i> Lịch sử thanh toán
+                </div>
+                <a href="{{ url_for('payments.index') }}" class="btn btn-sm btn-primary">Xem toàn bộ</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Học viên</th>
+                                <th>Khóa học</th>
+                                <th>Tổng số</th>
+                                <th>Ngày</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if recent_payments %}
+                                {% for payment in recent_payments %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('students.view', id=payment.student_id) }}">
+                                            {{ payment.student.full_name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ payment.course.name }}</td>
+                                    <td>${{ "%.2f"|format(payment.amount) }}</td>
+                                    <td>{{ payment.payment_date.strftime('%b %d, %Y') }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center">Không có khoản thanh toán gần đây</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- New Students -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-user-plus me-2"></i> Học viên mới
+                </div>
+                <a href="{{ url_for('students.index') }}" class="btn btn-sm btn-primary">Xem toàn bộ</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Họ tên</th>
+                                <th>Email</th>
+                                <th>Tham gia từ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if new_students %}
+                                {% for student in new_students %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('students.view', id=student.id) }}">
+                                            {{ student.full_name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ student.email }}</td>
+                                    <td>{{ student.date_joined.strftime('%b %d, %Y') }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center">Không có học viên</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Column -->
+    <div class="col-md-6">
+        <!-- Upcoming Courses -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-calendar-alt me-2"></i> Khóa học sắp tới
+                </div>
+                <a href="{{ url_for('courses.index') }}" class="btn btn-sm btn-primary">Xem toàn bộ</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Khóa học</th>
+                                <th>Ngày bắt đầu</th>
+                                <th>Đã ghi danh</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if upcoming_courses %}
+                                {% for course in upcoming_courses %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('courses.view', id=course.id) }}">
+                                            {{ course.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ course.start_date.strftime('%b %d, %Y') }}</td>
+                                    <td>{{ course.enrolled_students_count }}/{{ course.max_students }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="3" class="text-center">Không có khóa học sắp tới</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- My Courses (for teachers) -->
+        {% if current_user.role == 'teacher' %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-chalkboard-teacher me-2"></i> Khóa học của tôi
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Khóa học</th>
+                                <th>Ngày</th>
+                                <th>Học viên</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if teacher_courses %}
+                                {% for course in teacher_courses %}
+                                <tr>
+                                    <td>{{ course.name }}</td>
+                                    <td>{{ course.start_date.strftime('%b %d') }} - {{ course.end_date.strftime('%b %d, %Y') }}</td>
+                                    <td>{{ course.enrolled_students_count }}/{{ course.max_students }}</td>
+                                    <td>
+                                        <a href="{{ url_for('courses.view', id=course.id) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center">Không có khóa học nào được gắn cho bạn</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-bolt me-2"></i> Thao tác nhanh
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <a href="{{ url_for('students.add') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-user-plus me-2"></i> Thêm học viên
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('payments.add') }}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-money-check me-2"></i> Ghi nhận thanh toán
+                        </a>
+                    </div>
+                    {% if g.is_admin %}
+                    <div class="col-6">
+                        <a href="{{ url_for('courses.add') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-book-medical me-2"></i> Thêm khóa học
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('notifications.create') }}" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-bell me-2"></i> Gửi thông báo
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

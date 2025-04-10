@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.name }} - Course Details{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-book me-2"></i> 
+        Chi tiết khóa học
+    </h1>
+    <div>
+        {% if g.is_admin or (course.teacher and course.teacher.id == current_user.id) %}
+        <a href="{{ url_for('courses.edit', id=course.id) }}" class="btn btn-warning me-2">
+            <i class="fas fa-edit me-2"></i> Chỉnh sửa
+        </a>
+        {% endif %}
+        <a href="{{ url_for('courses.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Quay lại khóa học
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Course Information -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i> Thông tin khóa học
+            </div>
+            <div class="card-body">
+                <h3 class="card-title mb-3">{{ course.name }}</h3>
+                
+                <div class="mb-3">
+                    <p class="mb-1"><strong>Trạng thái:</strong>
+                        {% if course.active %}
+                            <span class="badge bg-success">Hoạt động</span>
+                        {% else %}
+                            <span class="badge bg-danger">Không hoạt động</span>
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <table class="table">
+                    <tbody>
+                        <tr>
+                            <th><i class="fas fa-calendar-alt me-2"></i> Ngày bắt đầu:</th>
+                            <td>{{ course.start_date.strftime('%b %d, %Y') }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-calendar-check me-2"></i> 
+                                Ngày kết thúc:</th>
+                            <td>{{ course.end_date.strftime('%b %d, %Y') }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-money-bill-wave me-2"></i> Giá:</th>
+                            <td>{{ course.price|format_currency }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-users me-2"></i> Tuyển sinh:</th>
+                            <td>{{ course.enrolled_students_count }}/{{ course.max_students }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-chalkboard-teacher me-2"></i> Giáo viên:</th>
+                            <td>{{ course.teacher.full_name if course.teacher else 'Chưa phân công' }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-calendar-week me-2"></i> Tổng số buổi:</th>
+                            <td>{{ course.total_sessions }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-check-square me-2"></i> Buổi đã học:</th>
+                            <td>{{ course.completed_sessions() }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="fas fa-hourglass-half me-2"></i> Buổi còn lại:</th>
+                            <td>{{ course.remaining_sessions() }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div class="progress mb-3" style="height: 20px;" title="Enrollment capacity">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         style="width: {{ (course.enrolled_students_count / course.max_students * 100) if course.max_students > 0 else 0 }}%;" 
+                         aria-valuenow="{{ course.enrolled_students_count }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="{{ course.max_students }}">
+                        {{ course.enrolled_students_count }}/{{ course.max_students }}
+                    </div>
+                </div>
+                
+                {% if course.total_sessions > 0 %}
+                <h6 class="mt-3">Tiến độ khóa học</h6>
+                <div class="progress mb-2" style="height: 20px;" title="Course progress">
+                    {% set completion_percent = (course.completed_sessions() / course.total_sessions * 100) if course.total_sessions > 0 else 0 %}
+                    <div class="progress-bar bg-info" role="progressbar" 
+                         style="width: {{ completion_percent }}%;" 
+                         aria-valuenow="{{ course.completed_sessions() }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="{{ course.total_sessions }}">
+                        {{ course.completed_sessions() }}/{{ course.total_sessions }}
+                    </div>
+                </div>
+                <div class="text-muted small mb-3">
+                    {% if completion_percent < 25 %}
+                        Khóa học mới bắt đầu
+                    {% elif completion_percent < 50 %}
+                        Khóa học đang tiến hành
+                    {% elif completion_percent < 75 %}
+                        Khóa học đã qua một nửa
+                    {% elif completion_percent < 100 %}
+                        Khóa học sắp kết thúc
+                    {% else %}
+                        Khóa học đã hoàn thành
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <div class="d-grid gap-2 mt-4">
+                    <a href="mailto:{{ course.teacher.email }}" class="btn btn-outline-primary">
+                        <i class="fas fa-envelope me-2"></i> 
+                        Liên hệ với giáo viên
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Course Description -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-align-left me-2"></i> Miêu tả
+            </div>
+            <div class="card-body">
+                <p>{{ course.description or 'No description available.' }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Enrolled Students -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-user-graduate me-2"></i> Học sinh đã đăng ký
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tên học sinh</th>
+                                <th>Email</th>
+                                <th>Số điện thoại</th>
+                                <th>Trạng thái</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if enrolled_students %}
+                                {% for item in enrolled_students %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('students.view', id=item.student.id) }}">
+                                            {{ item.student.full_name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ item.student.email }}</td>
+                                    <td>{{ item.student.phone }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if item.enrollment.status == 'active' else ('primary' if item.enrollment.status == 'completed' else 'danger') }}">
+                                            {{ item.enrollment.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if g.is_admin or current_user.id == course.teacher_id %}
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" id="statusDropdown{{ item.student.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                Hoạt động
+                                            </button>
+                                            <ul class="dropdown-menu" aria-labelledby="statusDropdown{{ item.student.id }}">
+                                                <li>
+                                                    <form action="{{ url_for('courses.change_enrollment_status', student_id=item.student.id, course_id=course.id) }}" method="POST">
+                                                        <input type="hidden" name="status" value="active">
+                                                        <button type="submit" class="dropdown-item">Đánh dấu là đang hoạt động</button>
+                                                    </form>
+                                                </li>
+                                                <li>
+                                                    <form action="{{ url_for('courses.change_enrollment_status', student_id=item.student.id, course_id=course.id) }}" method="POST">
+                                                        <input type="hidden" name="status" value="completed">
+                                                        <button type="submit" class="dropdown-item">Đánh dấu là đã hoàn thành</button>
+                                                    </form>
+                                                </li>
+                                                <li>
+                                                    <form action="{{ url_for('courses.change_enrollment_status', student_id=item.student.id, course_id=course.id) }}" method="POST">
+                                                        <input type="hidden" name="status" value="dropped">
+                                                        <button type="submit" class="dropdown-item">Đánh dấu là đã bỏ không tham gia</button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center">
+                                    Không có học viên nào đăng ký khóa học này</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

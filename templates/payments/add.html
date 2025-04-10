@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+
+{% block title %}Ghi nhận thanh toán - Quản lý trung tâm Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-money-check me-2"></i> 
+        Bản ghi thanh toán
+    </h1>
+    <a href="{{ url_for('payments.index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i> Quay lại Thanh toán
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-file-invoice-dollar me-2"></i> 
+        Thông tin thanh toán
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ for_student|default(false) and url_for('payments.add_for_student', student_id=student.id) or url_for('payments.add') }}" class="row g-3 needs-validation" novalidate>
+            {% if not for_student %}
+            <!-- Student selection (only if not paying for a specific student) -->
+            <div class="col-md-12">
+                <label for="student_id" class="form-label">
+                Học sinh</label>
+                <select class="form-select" id="student_id" name="student_id" data-placeholder="Chọn một học sinh" required>
+                    <option value=""></option>
+                    {% for student_option in students %}
+                    <option value="{{ student_option.id }}">{{ student_option.full_name }} ({{ student_option.email }})</option>
+                    {% endfor %}
+                </select>
+                <div class="invalid-feedback">
+
+                    Vui lòng chọn một học sinh.
+                </div>
+            </div>
+            {% else %}
+            <!-- Display student information if already selected -->
+            <div class="col-md-12">
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">Thanh toán cho:</h5>
+                    <p class="mb-0"><strong>{{ student.full_name }}</strong> ({{ student.email }})</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Course selection -->
+            <div class="col-md-12">
+                <label for="course_id" class="form-label">
+                Khóa học</label>
+                <select class="form-select" id="course_id" name="course_id" data-placeholder="Chọn một khóa học" required>
+                    <option value=""></option>
+                    {% for course in courses %}
+                    <option value="{{ course.id }}">{{ course.name }} ({{ course.price|format_currency }})</option>
+                    {% endfor %}
+                </select>
+                <div class="invalid-feedback">
+
+                    Vui lòng chọn một khóa học.
+                </div>
+            </div>
+            
+            <!-- Payment amount -->
+            <div class="col-md-6">
+                <label for="amount" class="form-label">
+                    Số tiền thanh toán (₫)</label>
+                <input type="number" step="1000" min="1000" class="form-control" id="amount" name="amount" required>
+                <div class="invalid-feedback">
+
+                    Vui lòng nhập số tiền thanh toán hợp lệ (tối thiểu 1.000 ₫).
+                </div>
+            </div>
+            
+            <!-- Payment method -->
+            <div class="col-md-6">
+                <label for="payment_method" class="form-label">
+                    Phương thức thanh toán</label>
+                <select class="form-select" id="payment_method" name="payment_method" required>
+
+                    <option value="cash">Tiền mặt</option>
+                    <option value="card">Thẻ</option>
+                    <option value="transfer">Chuyển khoản ngân hàng</option>
+                </select>
+            </div>
+            
+            <div class="col-12 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i> 
+                    Ghi lại thanh toán
+                </button>
+                {% if for_student %}
+                <a href="{{ url_for('students.view', id=student.id) }}" class="btn btn-secondary ms-2">
+                Hủy bỏ</a>
+                {% else %}
+                <a href="{{ url_for('payments.index') }}" class="btn btn-secondary ms-2">
+                    Hủy bỏ</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Đảm bảo rằng jQuery đã được tải trước khi khởi chạy Select2
+document.addEventListener('DOMContentLoaded', function() {
+    // Đảm bảo rằng jQuery đã được tải
+    if (typeof jQuery !== 'undefined') {
+        // Sửa đổi giao diện Select2 trước khi áp dụng
+        $.fn.select2.defaults.set('theme', 'bootstrap-5');
+        
+        // Kích hoạt Select2 cho dropdown chọn học sinh với tính năng tìm kiếm
+        $('#student_id').select2({
+            dropdownParent: $('body'), // Đặt dropdown trong body để tránh vấn đề overflow
+            placeholder: 'Chọn một học sinh',
+            allowClear: true,
+            width: '100%',
+            language: {
+                noResults: function() {
+                    return "Không tìm thấy học sinh";
+                },
+                searching: function() {
+                    return "Đang tìm kiếm...";
+                }
+            }
+        });
+        
+        // Kích hoạt Select2 cho dropdown chọn khóa học với tính năng tìm kiếm
+        $('#course_id').select2({
+            dropdownParent: $('body'), // Đặt dropdown trong body để tránh vấn đề overflow
+            placeholder: 'Chọn một khóa học',
+            allowClear: true,
+            width: '100%',
+            language: {
+                noResults: function() {
+                    return "Không tìm thấy khóa học";
+                },
+                searching: function() {
+                    return "Đang tìm kiếm...";
+                }
+            }
+        });
+        
+        // Kích hoạt Select2 cho phương thức thanh toán
+        $('#payment_method').select2({
+            theme: 'bootstrap-5',
+            minimumResultsForSearch: Infinity, // Tắt tìm kiếm cho dropdown này vì ít lựa chọn
+            width: '100%'
+        });
+        
+        // Nếu có dropdown chọn học sinh, cập nhật khóa học khi học sinh thay đổi
+        $('#student_id').on('change', function() {
+            const studentId = $(this).val();
+            if (!studentId) return;
+            
+            // In a real implementation, this would fetch from an API endpoint
+            // For this template, we won't implement the dynamic course updates
+            // but in real application, you would call:
+            // updateCoursesByStudent(studentId, 'course_id');
+        });
+        
+        // Khắc phục vấn đề validation với Select2
+        $('form').on('submit', function() {
+            $('.select2-hidden-accessible').each(function() {
+                if ($(this).attr('required') && !$(this).val()) {
+                    $(this).siblings('.select2').addClass('is-invalid');
+                } else {
+                    $(this).siblings('.select2').removeClass('is-invalid');
+                }
+            });
+        });
+        
+        console.log('Select2 đã được khởi tạo');
+    } else {
+        console.error('jQuery không được tải');
+    }
+});
+</script>
+{% endblock %}

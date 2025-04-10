@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Các khóa học - Quản lý trung tâm Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-book me-2"></i> Khóa học
+    </h1>
+    {% if g.is_admin %}
+    <a href="{{ url_for('courses.add') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i> Thêm khóa học mới
+    </a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <i class="fas fa-list me-2"></i> 
+                Danh sách khóa học
+            </div>
+            <div class="col-md-4">
+                <input type="text" id="courseSearch" class="form-control" placeholder="Search courses...">
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover" id="coursesTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên khóa học</th>
+                        <th>Ngày</th>
+                        <th>Giảng viên</th>
+                        <th>Giá</th>
+                        <th>Đăng ký</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if courses %}
+                        {% for course in courses %}
+                        <tr>
+                            <td>{{ course.id }}</td>
+                            <td>{{ course.name }}</td>
+                            <td>{{ course.start_date.strftime('%b %d') }} - {{ course.end_date.strftime('%b %d, %Y') }}</td>
+                            <td>{{ course.teacher.full_name if course.teacher else 'Chưa gán giáo viên' }}</td>
+                            <td>{{ course.price|format_currency }}</td>
+                            <td>{{ course.enrolled_students_count }}/{{ course.max_students }}</td>
+                            <td>
+                                {% if course.active %}
+                                <span class="badge bg-success">Hoạt động</span>
+                                {% else %}
+                                <span class="badge bg-danger">Không hoạt động</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('courses.view', id=course.id) }}" class="btn btn-info" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if g.is_admin or (course.teacher and course.teacher.id == current_user.id) %}
+                                    <a href="{{ url_for('courses.edit', id=course.id) }}" class="btn btn-warning" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if g.is_admin %}
+                                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteCourseModal{{ course.id }}" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    
+                                    <!-- Delete Modal -->
+                                    <div class="modal fade" id="deleteCourseModal{{ course.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">
+                                                        Xác nhận Xóa</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+
+                                                    Bạn có chắc chắn muốn xóa khóa học không? <strong>{{ course.name }}</strong>? 
+                                                    Thao tác này cũng sẽ xóa tất cả các đăng ký và thanh toán liên quan đến khóa học này. Không thể hoàn tác hành động này.
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    Hủy bỏ</button>
+                                                    <form action="{{ url_for('courses.delete', id=course.id) }}" method="POST">
+                                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center">No courses found</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Course search functionality
+    const searchInput = document.getElementById('courseSearch');
+    const table = document.getElementById('coursesTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    searchInput.addEventListener('keyup', function() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        for (let i = 0; i < rows.length; i++) {
+            const rowData = rows[i].textContent.toLowerCase();
+            if (rowData.includes(searchTerm)) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

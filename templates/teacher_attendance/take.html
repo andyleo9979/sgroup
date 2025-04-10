@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Chấm công giáo viên - Quản lý trung tâm Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-user-check me-2"></i> Chấm công giáo viên
+    </h1>
+    <div>
+        <a href="{{ url_for('teacher_attendance.index') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Quay lại
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-calendar-day me-2"></i> Chấm công ngày {{ selected_date }}
+        </h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('teacher_attendance.take_attendance') }}" class="needs-validation" novalidate>
+            <div class="mb-3">
+                <label for="date" class="form-label">Ngày chấm công</label>
+                <input type="date" class="form-control" id="date" name="date" value="{{ selected_date }}" required>
+                <div class="invalid-feedback">
+                    Vui lòng chọn ngày chấm công
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="select-all">
+                                    <label class="form-check-label" for="select-all"></label>
+                                </div>
+                            </th>
+                            <th style="width: 20%">Giáo viên</th>
+                            <th style="width: 15%">Trạng thái</th>
+                            <th style="width: 15%">Giờ vào</th>
+                            <th style="width: 15%">Giờ ra</th>
+                            <th style="width: 30%">Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for teacher in teachers %}
+                        <tr>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input teacher-checkbox" type="checkbox" name="teacher_id" value="{{ teacher.id }}" id="teacher-{{ teacher.id }}" 
+                                        {% if teacher.id in existing_attendances %}checked{% endif %}>
+                                    <label class="form-check-label" for="teacher-{{ teacher.id }}"></label>
+                                </div>
+                            </td>
+                            <td>{{ teacher.full_name }}</td>
+                            <td>
+                                <select class="form-select" name="status_{{ teacher.id }}">
+                                    <option value="present" {% if teacher.id in existing_attendances and existing_attendances[teacher.id].status == 'present' %}selected{% endif %}>Có mặt</option>
+                                    <option value="absent" {% if teacher.id in existing_attendances and existing_attendances[teacher.id].status == 'absent' %}selected{% endif %}>Vắng mặt</option>
+                                    <option value="late" {% if teacher.id in existing_attendances and existing_attendances[teacher.id].status == 'late' %}selected{% endif %}>Đi muộn</option>
+                                    <option value="leave" {% if teacher.id in existing_attendances and existing_attendances[teacher.id].status == 'leave' %}selected{% endif %}>Nghỉ phép</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="time" class="form-control" name="time_in_{{ teacher.id }}" 
+                                    value="{% if teacher.id in existing_attendances and existing_attendances[teacher.id].time_in %}{{ existing_attendances[teacher.id].time_in.strftime('%H:%M') }}{% endif %}">
+                            </td>
+                            <td>
+                                <input type="time" class="form-control" name="time_out_{{ teacher.id }}" 
+                                    value="{% if teacher.id in existing_attendances and existing_attendances[teacher.id].time_out %}{{ existing_attendances[teacher.id].time_out.strftime('%H:%M') }}{% endif %}">
+                            </td>
+                            <td>
+                                <input type="text" class="form-control" name="note_{{ teacher.id }}" 
+                                    value="{% if teacher.id in existing_attendances %}{{ existing_attendances[teacher.id].note or '' }}{% endif %}" 
+                                    placeholder="Ghi chú (nếu có)">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save me-2"></i> Lưu chấm công
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Form validation
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+        
+        // Select all checkbox
+        const selectAllCheckbox = document.getElementById('select-all');
+        const teacherCheckboxes = document.querySelectorAll('.teacher-checkbox');
+        
+        selectAllCheckbox.addEventListener('change', function() {
+            teacherCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        });
+        
+        // Update select all checkbox based on individual checkboxes
+        function updateSelectAllCheckbox() {
+            const checkedCount = document.querySelectorAll('.teacher-checkbox:checked').length;
+            selectAllCheckbox.checked = checkedCount === teacherCheckboxes.length;
+            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < teacherCheckboxes.length;
+        }
+        
+        teacherCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectAllCheckbox);
+        });
+        
+        // Initialize the select all checkbox state
+        updateSelectAllCheckbox();
+        
+        // Status change handling
+        const statusSelects = document.querySelectorAll('select[name^="status_"]');
+        statusSelects.forEach(select => {
+            select.addEventListener('change', function() {
+                const teacherId = this.name.replace('status_', '');
+                const checkbox = document.getElementById(`teacher-${teacherId}`);
+                const timeInInput = document.querySelector(`input[name="time_in_${teacherId}"]`);
+                const timeOutInput = document.querySelector(`input[name="time_out_${teacherId}"]`);
+                
+                // Enable the checkbox when selecting a status
+                checkbox.checked = true;
+                
+                // If absent or leave, clear time fields
+                if (this.value === 'absent' || this.value === 'leave') {
+                    timeInInput.value = '';
+                    timeOutInput.value = '';
+                }
+                
+                // If present or late and no time set, set default values
+                if ((this.value === 'present' || this.value === 'late') && (!timeInInput.value || !timeOutInput.value)) {
+                    if (!timeInInput.value) timeInInput.value = '08:00';
+                    if (!timeOutInput.value) timeOutInput.value = '17:00';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

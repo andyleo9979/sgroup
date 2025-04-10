@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Nhập dữ liệu hàng loạt - Quản lý trung tâm Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-file-import me-2"></i> Nhập dữ liệu hàng loạt
+    </h1>
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i> Quay lại trang chủ
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-user-graduate me-2"></i> Nhập danh sách học sinh
+            </div>
+            <div class="card-body">
+                <p>Tính năng này cho phép bạn nhập danh sách học sinh hàng loạt từ file Excel.</p>
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('import_data.import_students') }}" class="btn btn-primary">
+                        <i class="fas fa-upload me-2"></i> Nhập danh sách học sinh
+                    </a>
+                    <a href="{{ url_for('import_data.download_student_template') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-download me-2"></i> Tải mẫu Excel học sinh
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <i class="fas fa-chalkboard-teacher me-2"></i> Nhập danh sách giáo viên
+            </div>
+            <div class="card-body">
+                <p>Tính năng này cho phép bạn nhập danh sách giáo viên hàng loạt từ file Excel.</p>
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('import_data.import_teachers') }}" class="btn btn-success">
+                        <i class="fas fa-upload me-2"></i> Nhập danh sách giáo viên
+                    </a>
+                    <a href="{{ url_for('import_data.download_teacher_template') }}" class="btn btn-outline-success">
+                        <i class="fas fa-download me-2"></i> Tải mẫu Excel giáo viên
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header bg-info text-white">
+        <i class="fas fa-info-circle me-2"></i> Hướng dẫn sử dụng
+    </div>
+    <div class="card-body">
+        <div class="accordion" id="importGuideAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingOne">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                        Hướng dẫn nhập danh sách học sinh
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#importGuideAccordion">
+                    <div class="accordion-body">
+                        <ol>
+                            <li>Tải mẫu Excel học sinh từ liên kết <a href="{{ url_for('import_data.download_student_template') }}">Tải mẫu Excel học sinh</a>.</li>
+                            <li>Mở file Excel và nhập thông tin học sinh theo đúng định dạng.</li>
+                            <li>Lưu file Excel.</li>
+                            <li>Quay lại trang nhập học sinh và tải lên file Excel đã điền thông tin.</li>
+                            <li>Hệ thống sẽ xử lý và nhập danh sách học sinh hàng loạt.</li>
+                        </ol>
+                        <p><strong>Lưu ý:</strong></p>
+                        <ul>
+                            <li>Các trường bắt buộc: Tên, Họ, Email, Số điện thoại.</li>
+                            <li>Định dạng ngày sinh: YYYY-MM-DD (ví dụ: 2010-05-15).</li>
+                            <li>Trạng thái bán trú: "không", "bán trú", hoặc "nội trú".</li>
+                            <li>Mỗi email học sinh phải là duy nhất trong hệ thống.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingTwo">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                        Hướng dẫn nhập danh sách giáo viên
+                    </button>
+                </h2>
+                <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#importGuideAccordion">
+                    <div class="accordion-body">
+                        <ol>
+                            <li>Tải mẫu Excel giáo viên từ liên kết <a href="{{ url_for('import_data.download_teacher_template') }}">Tải mẫu Excel giáo viên</a>.</li>
+                            <li>Mở file Excel và nhập thông tin giáo viên theo đúng định dạng.</li>
+                            <li>Lưu file Excel.</li>
+                            <li>Quay lại trang nhập giáo viên và tải lên file Excel đã điền thông tin.</li>
+                            <li>Hệ thống sẽ xử lý và nhập danh sách giáo viên hàng loạt.</li>
+                        </ol>
+                        <p><strong>Lưu ý:</strong></p>
+                        <ul>
+                            <li>Các trường bắt buộc: Tên đăng nhập, Email, Mật khẩu, Tên, Họ.</li>
+                            <li>Mật khẩu phải có ít nhất 6 ký tự.</li>
+                            <li>Tên đăng nhập và email của mỗi giáo viên phải là duy nhất trong hệ thống.</li>
+                            <li>Vai trò mặc định là "teacher" (giáo viên).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

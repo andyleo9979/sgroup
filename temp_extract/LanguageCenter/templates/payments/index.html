@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Thanh toán - Quản lý trung tâm Sgroup{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-money-bill-wave me-2"></i> 
+        Thanh toán
+    </h1>
+    <a href="{{ url_for('payments.add') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i> Ghi lại khoản thanh toán mới
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <i class="fas fa-list me-2"></i> 
+                Hồ sơ thanh toán
+            </div>
+            <div class="col-md-4">
+                <input type="text" id="paymentSearch" class="form-control" placeholder="Search payments...">
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover" id="paymentsTable">
+                <thead>
+                    <tr>
+                        <th>Số biên lai</th>
+                        <th>Ngày</th>
+                        <th>Sinh viên</th>
+                        <th>Khóa học</th>
+                        <th>Phương pháp</th>
+                        <th>Số tiền</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if payments %}
+                        {% for payment in payments %}
+                        <tr>
+                            <td>{{ payment.receipt_number }}</td>
+                            <td>{{ payment.payment_date.strftime('%b %d, %Y') }}</td>
+                            <td>
+                                <a href="{{ url_for('students.view', id=payment.student_id) }}">
+                                    {{ payment.student.full_name }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('courses.view', id=payment.course_id) }}">
+                                    {{ payment.course.name }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ payment.payment_method }}</span>
+                            </td>
+                            <td>{{ payment.amount|format_currency }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('payments.view_receipt', id=payment.id) }}" class="btn btn-info" title="View Receipt">
+                                        <i class="fas fa-file-invoice-dollar"></i>
+                                    </a>
+                                    {% if g.is_admin %}
+                                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deletePaymentModal{{ payment.id }}" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    
+                                    <!-- Delete Modal -->
+                                    <div class="modal fade" id="deletePaymentModal{{ payment.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Confirm Delete</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    Bạn có chắc chắn muốn xóa hồ sơ thanh toán có số biên lai không? <strong>{{ payment.receipt_number }}</strong>? Hành động này không thể hoàn tác.
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                                                    <form action="{{ url_for('payments.delete', id=payment.id) }}" method="POST">
+                                                        <button type="submit" class="btn btn-danger">Xóa</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">
+                            Không tìm thấy hồ sơ thanh toán</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Payment search functionality
+    const searchInput = document.getElementById('paymentSearch');
+    const table = document.getElementById('paymentsTable');
+    const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+    
+    searchInput.addEventListener('keyup', function() {
+        const searchTerm = searchInput.value.toLowerCase();
+        
+        for (let i = 0; i < rows.length; i++) {
+            const rowData = rows[i].textContent.toLowerCase();
+            if (rowData.includes(searchTerm)) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

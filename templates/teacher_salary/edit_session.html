@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Chỉnh sửa buổi dạy - Quản lý lương giáo viên{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5">
+        <i class="fas fa-edit me-2"></i> Chỉnh sửa buổi dạy
+    </h1>
+    <div>
+        <a href="{{ url_for('teacher_salary.sessions') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Quay lại Danh sách
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-edit me-2"></i> Thông tin buổi dạy
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('teacher_salary.edit_session', id=session.id) }}">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="teacher_id" class="form-label">Giáo viên</label>
+                    <select class="form-select" id="teacher_id" name="teacher_id" {% if current_user.role != 'admin' %}disabled{% endif %} required>
+                        <option value="">-- Chọn giáo viên --</option>
+                        {% for teacher in teachers %}
+                        <option value="{{ teacher.id }}" {% if session.teacher_id == teacher.id %}selected{% endif %}>
+                            {{ teacher.full_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if current_user.role != 'admin' %}
+                    <input type="hidden" name="teacher_id" value="{{ session.teacher_id }}">
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="course_id" class="form-label">Khóa học</label>
+                    <select class="form-select" id="course_id" name="course_id" {% if current_user.role != 'admin' %}disabled{% endif %} required>
+                        <option value="">-- Chọn khóa học --</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}" {% if session.course_id == course.id %}selected{% endif %}>
+                            {{ course.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if current_user.role != 'admin' %}
+                    <input type="hidden" name="course_id" value="{{ session.course_id }}">
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="date" class="form-label">Ngày dạy</label>
+                    <input type="date" class="form-control" id="date" name="date" value="{{ session.date.strftime('%Y-%m-%d') }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="periods" class="form-label">Số tiết dạy</label>
+                    <input type="number" class="form-control" id="periods" name="periods" min="1" value="{{ session.periods }}" required>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="note" class="form-label">Ghi chú</label>
+                <textarea class="form-control" id="note" name="note" rows="3">{{ session.note or '' }}</textarea>
+            </div>
+            
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i> Lưu thay đổi
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

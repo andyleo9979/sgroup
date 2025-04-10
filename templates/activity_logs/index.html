@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}Logs Hoạt Động | Quản Lý Trung Tâm{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <h1 class="mb-4">Logs Hoạt Động</h1>
+        <form action="{{ url_for('logs.clear_logs') }}" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tất cả logs hoạt động?');">
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash-alt"></i> Xóa Logs
+            </button>
+        </form>
+    </div>
+
+    <!-- Bộ lọc -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Bộ lọc</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('logs.index') }}" method="get" class="row g-3">
+                <div class="col-md-5">
+                    <label for="user_id" class="form-label">Người dùng</label>
+                    <select class="form-select" id="user_id" name="user_id">
+                        <option value="">Tất cả người dùng</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}" {% if current_user_id == user.id %}selected{% endif %}>{{ user.username }} ({{ user.full_name }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label for="action" class="form-label">Hành động</label>
+                    <select class="form-select" id="action" name="action">
+                        <option value="">Tất cả hành động</option>
+                        {% for action_type in actions %}
+                        <option value="{{ action_type }}" {% if current_action == action_type %}selected{% endif %}>{{ action_type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter"></i> Lọc
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Danh sách logs -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Danh sách logs ({{ logs.total }})</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Thời gian</th>
+                            <th scope="col">Người dùng</th>
+                            <th scope="col">Hành động</th>
+                            <th scope="col">Chi tiết</th>
+                            <th scope="col">Địa chỉ IP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs.items %}
+                        <tr>
+                            <td>{{ log.id }}</td>
+                            <td>{{ log.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                            <td>
+                                {% if log.user %}
+                                {{ log.user.username }}
+                                {% else %}
+                                <span class="text-muted">Không xác định</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-info">{{ log.action }}</span></td>
+                            <td>
+                                {% if log.details %}
+                                <span class="text-wrap">{{ log.details }}</span>
+                                {% else %}
+                                <span class="text-muted">Không có chi tiết</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ log.ip_address or 'N/A' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">Không có logs hoạt động nào.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Phân trang -->
+        {% if logs.pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if logs.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('logs.index', page=logs.prev_num, user_id=current_user_id, action=current_action) }}">
+                            <i class="fas fa-chevron-left"></i> Trước
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link"><i class="fas fa-chevron-left"></i> Trước</span>
+                    </li>
+                    {% endif %}
+
+                    {% for page_num in logs.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if page_num == logs.page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('logs.index', page=page_num, user_id=current_user_id, action=current_action) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if logs.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('logs.index', page=logs.next_num, user_id=current_user_id, action=current_action) }}">
+                            Sau <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Sau <i class="fas fa-chevron-right"></i></span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
